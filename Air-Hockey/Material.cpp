@@ -17,10 +17,6 @@ Material::Material(SimpleVertexShader * a_vShader, SimplePixelShader * a_pShader
 
 void Material::Release()
 {
-	delete vertexShader;
-	delete pixelShader;
-	delete textureSRV;
-	delete sampler;
 }
 
 SimpleVertexShader * Material::getVertexShader()

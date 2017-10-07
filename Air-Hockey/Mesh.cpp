@@ -188,8 +188,6 @@ Mesh::Mesh()
 
 void Mesh::Release()
 {
-	delete vertexBuffer;
-	delete indexBuffer;
 }
 
 ID3D11Buffer * Mesh::GetVertexBuffer()

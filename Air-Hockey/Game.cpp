@@ -48,7 +48,6 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-
 	//Clean up 
 	designTextureSRV->Release();
 	sampler->Release();
@@ -62,8 +61,6 @@ Game::~Game()
 	delete pixelShader;
 
 	//Clean up entities, meshes, cameras, etc.
-	delete entity;
-	delete cube;
 	delete mainCamera;
 
 }
