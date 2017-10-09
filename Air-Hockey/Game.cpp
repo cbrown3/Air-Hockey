@@ -87,12 +87,12 @@ void Game::Init()
 		0,
 		&designTextureSRV);
 
-	CreateWICTextureFromFile(
-		device,		//The device handles creating new resources (like textures)
-		context,	//context
-		L"Assets/Textures/wood.jpg",
-		0,
-		&woodTextureSRV);
+	//CreateWICTextureFromFile(
+		//device,		//The device handles creating new resources (like textures)
+		//context,	//context
+		//L"Assets/Textures/wood.jpg",
+	    //0,
+		//&woodTextureSRV);
 
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
@@ -134,7 +134,7 @@ void Game::LoadShaders()
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 
 	/*CREATE MATERIALS*/
-	textureMaterial = new Material(vertexShader, pixelShader, woodTextureSRV, sampler);
+	textureMaterial = new Material(vertexShader, pixelShader, fabricTextureSRV, sampler);
 }
 
 void Game::LoadLights()
