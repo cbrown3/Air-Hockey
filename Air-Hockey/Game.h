@@ -61,9 +61,11 @@ private:
 
 	//Meshes
 	Mesh* cube;
+	Mesh* sphere;
 
 	//Entities
 	GameEntity* entity;
+	GameEntity* entity2;
 
 	//Cameras
 	Camera* mainCamera;
@@ -78,12 +80,16 @@ private:
 
 	//Lights
 	DirectionalLight dirLight;
+	PointLight pointLight;
 
 	/*Texture Fields*/
 
 	//An SRV is good enough to load textures with DirectX TK and then
 	//using them with shaders
 	ID3D11ShaderResourceView* designTextureSRV;
+	ID3D11ShaderResourceView* woodTextureSRV;
+	ID3D11ShaderResourceView* fabricTextureSRV;
+
 
 	//Needed for sampling options (like filter and address modes)
 	ID3D11SamplerState* sampler;

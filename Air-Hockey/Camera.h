@@ -12,6 +12,7 @@ public:
 	/*Gets and Sets*/
 	XMFLOAT4X4 getViewMatrix();
 	XMFLOAT4X4 getProjMatrix();
+	XMFLOAT3 getPositon(); 
 	float GetSpeed();
 	void SetSpeed(float a_speed);
 
@@ -25,6 +26,8 @@ public:
 	void MoveUp();
 	void MoveDown();
 	void RotateCamera(float a_xangle, float a_yangle);
+
+	
 
 	void Update();
 

@@ -31,6 +31,11 @@ Camera::~Camera()
 {
 }
 
+XMFLOAT3 Camera::getPositon()
+{
+	return camPos;
+}
+
 XMFLOAT4X4 Camera::getViewMatrix()
 {
 	return viewMatrix;

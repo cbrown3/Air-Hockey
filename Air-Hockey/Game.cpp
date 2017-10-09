@@ -30,7 +30,7 @@ Game::Game(HINSTANCE hInstance)
 
 	mainCamera = new Camera();
 
-	mainCamera->SetSpeed(0.005f);
+	mainCamera->SetSpeed(0.001f);
 
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -87,6 +87,21 @@ void Game::Init()
 		0,
 		&designTextureSRV);
 
+	CreateWICTextureFromFile(
+		device,		//The device handles creating new resources (like textures)
+		context,	//context
+		L"Assets/Textures/wood.jpg",
+		0,
+		&woodTextureSRV);
+
+	CreateWICTextureFromFile(
+		device,		//The device handles creating new resources (like textures)
+		context,	//context
+		L"Assets/Textures/fabric.JPG",
+		0,
+		&fabricTextureSRV);
+
+
 	//Create a sampler state
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -119,16 +134,20 @@ void Game::LoadShaders()
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 
 	/*CREATE MATERIALS*/
-	textureMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
+	textureMaterial = new Material(vertexShader, pixelShader, woodTextureSRV, sampler);
 }
 
 void Game::LoadLights()
 {
 	dirLight = DirectionalLight();
 
-	dirLight.AmbientColor = XMFLOAT4(0.0f, 0.4f, 0.2f, 1.0f);
-	dirLight.DiffuseColor = XMFLOAT4(0.2f, 0.2f, 0.3f, 1.0f);
+	dirLight.AmbientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	dirLight.DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	dirLight.Direction = XMFLOAT3(1.0f, -1.0f, 0.0f);
+
+	pointLight.AmbientColor = XMFLOAT4(0.1f, 0.0f, 0.0f, 1.0f);
+	pointLight.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	pointLight.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
 }
 
 
@@ -140,8 +159,13 @@ void Game::LoadLights()
 void Game::CreateMatrices()
 {
 	cube = new Mesh("Assets/Models/cube.obj", device);
+	sphere = new Mesh("Assets/Models/sphere.obj", device);
 
-	entity = new GameEntity(cube, textureMaterial);
+	entity = new GameEntity(sphere, textureMaterial);
+	entity2 = new GameEntity(sphere, textureMaterial);
+	entity2->SetPosition(0.0f, 1.0f, 0.0f);
+	entity2->SetScale(.01f, .01f, .01f);
+	entity2->UpdateWorldMatrix();
 }
 
 
@@ -170,6 +194,28 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	
+	//Movement for the main object
+	if (GetAsyncKeyState('J') & 0x8000)
+	{
+		entity->MoveAbsolute(-3 * deltaTime, 0, 0.0f);
+	}
+	if (GetAsyncKeyState('I') & 0x8000)
+	{
+		entity->MoveAbsolute(0.0f, 3 * deltaTime, 0.0f);
+	}
+	if (GetAsyncKeyState('K') & 0x8000)
+	{
+		entity->MoveAbsolute(0.0f, -3 * deltaTime, 0.0f);
+	}
+	if (GetAsyncKeyState('L') & 0x8000)
+	{
+		entity->MoveAbsolute(3 * deltaTime, 0.0f, 0.0f);
+	}
+
+
+
+	entity->UpdateWorldMatrix();
+
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
 		mainCamera->MoveForward();
@@ -223,14 +269,34 @@ void Game::Draw(float deltaTime, float totalTime)
 	viewMatrix = mainCamera->getViewMatrix();
 	projectionMatrix = mainCamera->getProjMatrix();
 
-	entity->PrepareMaterial(viewMatrix, projectionMatrix);
+	
 	pixelShader->SetData(
 		"light",  //The name of the (eventual) variable in the shader
 		&dirLight, //The address of the data to copy
 		sizeof(DirectionalLight)); //The size of the data to copy
+
+	
+
+	pixelShader->SetData( //sending over the point light
+		"pLight",
+		&pointLight,
+		sizeof(PointLight));
+
+	pixelShader->SetFloat3("cameraPosition", mainCamera->getPositon()); //sending cam position for specular
+	
+
 	pixelShader->SetSamplerState("basicSampler", sampler);
-	pixelShader->SetShaderResourceView("srv", designTextureSRV);
+
+
+	
+	
+	pixelShader->SetShaderResourceView("srv", fabricTextureSRV); //NEEDS TO BE SET UP FOR EACH ENTITY, might want to have a way to get srv from the entity, otherwise a lot of manual work needs to be done
+	entity->PrepareMaterial(viewMatrix, projectionMatrix);
 	entity->Draw(context);
+
+	pixelShader->SetShaderResourceView("srv", designTextureSRV); //Same as above
+	entity2->PrepareMaterial(viewMatrix, projectionMatrix);
+	entity2->Draw(context);
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it

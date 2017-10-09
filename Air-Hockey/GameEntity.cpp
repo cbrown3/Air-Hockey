@@ -46,6 +46,11 @@ void GameEntity::Release()
 	delete material;
 }
 
+Material* GameEntity::getMaterial()
+{
+	return material;
+}
+
 XMFLOAT4X4 GameEntity::GetWorldMatrix()
 {
 	return worldMatrix;
