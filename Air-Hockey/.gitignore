@@ -303,3 +303,5 @@ __pycache__/
 
 # OpenCover UI analysis results
 OpenCover/
+.vs/Air-Hockey/v15/.suo
+packages/directxtk_desktop_2015.2017.9.22.1/tools/native/XWBTool.exe

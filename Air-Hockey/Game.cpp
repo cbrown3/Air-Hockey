@@ -368,7 +368,7 @@ void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 	// Add any custom code here...
 	if (leftButtonPressed)
 	{
-		mainCamera->RotateCamera(y - prevMousePos.y, x - prevMousePos.x);
+		mainCamera->RotateCamera(y - float(prevMousePos.y), x - float(prevMousePos.x));
 	}
 
 	if (rightButtonPressed)
