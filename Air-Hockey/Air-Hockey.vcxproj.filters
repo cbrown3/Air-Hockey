@@ -38,6 +38,12 @@
     <ClCompile Include="Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Puck.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Paddle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXCore.h">
@@ -65,6 +71,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Puck.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Paddle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

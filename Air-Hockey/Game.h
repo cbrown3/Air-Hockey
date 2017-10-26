@@ -8,6 +8,8 @@
 #include "Camera.h"
 #include "Material.h"
 #include "Light.h"
+#include "Paddle.h"
+#include "Puck.h"
 
 class Game
 	: public DXCore
@@ -30,6 +32,10 @@ public:
 	void OnMouseMove(WPARAM buttonState, int x, int y);
 	void OnMouseWheel(float wheelDelta, int x, int y);
 private:
+
+	//Bool for Debug Mode (allow/disallow cam movement)
+	bool DebugModeActive;
+	int lastHit;
 
 	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadShaders();
@@ -66,6 +72,10 @@ private:
 	//Entities
 	GameEntity* entity;
 	GameEntity* entity2;
+	Paddle* player1;
+	Paddle* player2;
+
+
 
 	//Cameras
 	Camera* mainCamera;

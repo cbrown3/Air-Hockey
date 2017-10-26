@@ -30,6 +30,9 @@ Game::Game(HINSTANCE hInstance)
 
 	mainCamera = new Camera();
 
+	DebugModeActive = false;
+	lastHit = 0;
+
 	mainCamera->SetSpeed(0.001f);
 
 
@@ -117,6 +120,7 @@ void Game::Init()
 	// geometric primitives (points, lines or triangles) we want to draw.  
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 }
 
 // --------------------------------------------------------
@@ -161,9 +165,21 @@ void Game::CreateMatrices()
 	cube = new Mesh("Assets/Models/cube.obj", device);
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
 
+	player1 = new Paddle(cube, textureMaterial);
+	player2 = new Paddle(cube, textureMaterial);
+
+	player1->SetPosition(-1.5f, 0.0f, 0.0f);
+	player2->SetPosition(1.5f, 0.0f, 0.0f);
+	player1->SetScale(0.5f, 0.5f, 0.5f);
+	player2->SetScale(0.5f, 0.5f, 0.5f);
+
+	player1->UpdateWorldMatrix();
+	player2->UpdateWorldMatrix();
+
 	entity = new GameEntity(sphere, textureMaterial);
 	entity2 = new GameEntity(sphere, textureMaterial);
-	entity2->SetPosition(0.0f, 1.0f, 0.0f);
+	entity->SetPosition(20.0f, 1.0f, 0.0f);
+	entity->UpdateWorldMatrix();
 	entity2->SetScale(.01f, .01f, .01f);
 	entity2->UpdateWorldMatrix();
 }
@@ -197,49 +213,104 @@ void Game::Update(float deltaTime, float totalTime)
 	//Movement for the main object
 	if (GetAsyncKeyState('J') & 0x8000)
 	{
-		entity->MoveAbsolute(-3 * deltaTime, 0, 0.0f);
+		
 	}
 	if (GetAsyncKeyState('I') & 0x8000)
 	{
-		entity->MoveAbsolute(0.0f, 3 * deltaTime, 0.0f);
+		player2->MoveAbsolute(0.0f, 0.0f, 3 * deltaTime);
+
+		if (player2->GetPosition().z > 1)
+		{
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, 1);
+		}
+
 	}
 	if (GetAsyncKeyState('K') & 0x8000)
 	{
-		entity->MoveAbsolute(0.0f, -3 * deltaTime, 0.0f);
+		player2->MoveAbsolute(0.0f, 0.0f, -3 * deltaTime);
+		
+		if (player2->GetPosition().z < -1)
+		{
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, -1);
+		}
 	}
 	if (GetAsyncKeyState('L') & 0x8000)
 	{
-		entity->MoveAbsolute(3 * deltaTime, 0.0f, 0.0f);
+	
 	}
 
+	if (GetAsyncKeyState('T') & 0x8000 && (totalTime > lastHit)) 
+	{
+		if (DebugModeActive)
+		{
+			DebugModeActive = false;
+		}
+		else 
+		{
+			DebugModeActive = true;
+		}
 
+		lastHit = totalTime + 1;
+	}
 
 	entity->UpdateWorldMatrix();
+	if (DebugModeActive) {
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			mainCamera->MoveForward();
+		}
+		if (GetAsyncKeyState('A') & 0x8000)
+		{
+			mainCamera->StrafeLeft();
+		}
+		if (GetAsyncKeyState('S') & 0x8000)
+		{
+			mainCamera->MoveBack();
+		}
+		if (GetAsyncKeyState('D') & 0x8000)
+		{
+			mainCamera->StrafeRight();
+		}
+		if (GetAsyncKeyState('E') & 0x8000)
+		{
+			mainCamera->MoveUp();
+		}
+		if (GetAsyncKeyState('Q') & 0x8000)
+		{
+			mainCamera->MoveDown();
+		}
+	}
+	else
+	{
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			player1->MoveAbsolute(0.0f, 0.0f, 3 * deltaTime);
 
-	if (GetAsyncKeyState('W') & 0x8000)
-	{
-		mainCamera->MoveForward();
+			if (player1->GetPosition().z > 1)
+			{
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, 1);
+			}
+		}
+		if (GetAsyncKeyState('A') & 0x8000)
+		{
+			
+		}
+		if (GetAsyncKeyState('S') & 0x8000)
+		{
+			player1->MoveAbsolute(0.0f, 0.0f, -3 * deltaTime);
+
+			if (player1->GetPosition().z < -1)
+			{
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, -1);
+			}
+		}
+		if (GetAsyncKeyState('D') & 0x8000)
+		{
+			
+		}
+
 	}
-	if (GetAsyncKeyState('A') & 0x8000)
-	{
-		mainCamera->StrafeLeft();
-	}
-	if (GetAsyncKeyState('S') & 0x8000)
-	{
-		mainCamera->MoveBack();
-	}
-	if (GetAsyncKeyState('D') & 0x8000)
-	{
-		mainCamera->StrafeRight();
-	}
-	if (GetAsyncKeyState('E') & 0x8000)
-	{
-		mainCamera->MoveUp();
-	}
-	if (GetAsyncKeyState('Q') & 0x8000)
-	{
-		mainCamera->MoveDown();
-	}
+	
 
 	mainCamera->Update();
 
@@ -298,6 +369,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	entity2->PrepareMaterial(viewMatrix, projectionMatrix);
 	entity2->Draw(context);
 
+	player1->PrepareMaterial(viewMatrix, projectionMatrix);
+	player1->Draw(context);
+
+	player2->PrepareMaterial(viewMatrix, projectionMatrix);
+	player2->Draw(context);
+
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
@@ -333,6 +410,8 @@ void Game::OnMouseDown(WPARAM buttonState, int x, int y)
 		/*Middle button is down*/
 		middleButtonPressed = true;
 	}
+
+
 	// Save the previous mouse position, so we have it for the future
 	prevMousePos.x = x;
 	prevMousePos.y = y;
@@ -366,12 +445,12 @@ void Game::OnMouseUp(WPARAM buttonState, int x, int y)
 void Game::OnMouseMove(WPARAM buttonState, int x, int y)
 {
 	// Add any custom code here...
-	if (leftButtonPressed)
+	if (leftButtonPressed && DebugModeActive)
 	{
 		mainCamera->RotateCamera(y - float(prevMousePos.y), x - float(prevMousePos.x));
 	}
 
-	if (rightButtonPressed)
+	if (rightButtonPressed && DebugModeActive)
 	{
 		if (prevMousePos.x > x)
 		{
