@@ -66,6 +66,10 @@ Game::~Game()
 	//Clean up entities, meshes, cameras, etc.
 	delete mainCamera;
 
+
+	//delete paddles and puck
+	delete player1;
+	delete player2;
 }
 
 // --------------------------------------------------------

@@ -72,8 +72,11 @@ private:
 	//Entities
 	GameEntity* entity;
 	GameEntity* entity2;
+	
 	Paddle* player1;
 	Paddle* player2;
+
+	Puck* puck;
 
 
 

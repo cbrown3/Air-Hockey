@@ -40,7 +40,7 @@ public:
 	/*Materials*/
 	void PrepareMaterial(XMFLOAT4X4 a_viewMat, XMFLOAT4X4 a_projMat);
 
-private:
+protected:
 	//WorldMatrix
 	XMFLOAT4X4 worldMatrix;
 	XMFLOAT3 entityPos;
