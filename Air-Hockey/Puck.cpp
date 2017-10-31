@@ -4,6 +4,7 @@
 
 Puck::Puck(Mesh* a_mesh, Material* a_mat): GameEntity(a_mesh, a_mat)
 {
+	RandomVelocity();
 	Update();
 }
 
@@ -54,13 +55,7 @@ void Puck::CollisionDetection(Paddle a_paddle)
 
 void Puck::Reset()
 {
-	SetPosition(0, 2, 0);
-}
-
-void Puck::RandomVelocity()
-{
-	float randNum = rand() % 10 + 1;
-	velocity = XMVectorSet(randNum, 0, randNum, 0);
+	SetPosition(0, 0, 0);
 }
 
 void Puck::Update()
@@ -72,4 +67,15 @@ void Puck::Update()
 	puckPos = XMVectorAdd(velocity, puckPos);
 	XMStoreFloat3(&entityPos, puckPos);
 	direction = XMVector3Normalize(velocity);
+
+
+	//Checking for Wall Collision
+	if (GetPosition().x > 2.5)
+	{
+		Reset();
+	}
+	if (GetPosition().x < -2.5)
+	{
+		Reset();
+	}
 }
