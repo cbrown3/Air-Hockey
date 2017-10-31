@@ -172,8 +172,8 @@ void Game::CreateMatrices()
 	player1 = new Paddle(cube, textureMaterial);
 	player2 = new Paddle(cube, textureMaterial);
 
-	player1->SetPosition(-1.5f, 0.0f, 0.0f);
-	player2->SetPosition(1.5f, 0.0f, 0.0f);
+	player1->SetPosition(-2.5f, 0.0f, 0.0f);
+	player2->SetPosition(2.5f, 0.0f, 0.0f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
 
@@ -186,6 +186,12 @@ void Game::CreateMatrices()
 	entity->UpdateWorldMatrix();
 	entity2->SetScale(.01f, .01f, .01f);
 	entity2->UpdateWorldMatrix();
+
+
+	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -1 to 3
+	table = new GameEntity(cube, textureMaterial);
+	table->SetPosition(0.0f, -1.0f, 1.0f);
+	table->SetScale(8.0f, 0.5f, 4.0f);
 }
 
 
@@ -379,6 +385,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	player2->PrepareMaterial(viewMatrix, projectionMatrix);
 	player2->Draw(context);
 
+	table->PrepareMaterial(viewMatrix, projectionMatrix);
+	table->Draw(context);
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
