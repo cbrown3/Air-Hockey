@@ -78,6 +78,8 @@ private:
 
 	Puck* puck;
 
+	GameEntity* table;
+
 
 
 	//Cameras
