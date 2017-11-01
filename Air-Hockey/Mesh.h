@@ -12,7 +12,7 @@ public:
 	Mesh(char* meshData, ID3D11Device * a_device);
 	Mesh();
 	
-	void Release();
+	~Mesh();
 
 	ID3D11Buffer* GetVertexBuffer();
 	ID3D11Buffer* GetIndexBuffer();

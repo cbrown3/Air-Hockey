@@ -186,8 +186,10 @@ Mesh::Mesh()
 }
 
 
-void Mesh::Release()
+Mesh::~Mesh()
 {
+	vertexBuffer->Release();
+	indexBuffer->Release();
 }
 
 ID3D11Buffer * Mesh::GetVertexBuffer()

@@ -10,7 +10,7 @@ public:
 		ID3D11ShaderResourceView* a_textureSRV,
 	ID3D11SamplerState* a_sampler);
 	
-	void Release();
+	~Material();
 
 	/*Get Methods*/
 	SimpleVertexShader* getVertexShader();

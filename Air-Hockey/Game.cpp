@@ -53,23 +53,34 @@ Game::~Game()
 {
 	//Clean up 
 	designTextureSRV->Release();
+	fabricTextureSRV->Release();
 	sampler->Release();
-	textureMaterial->Release();
-	entity->Release();
-	cube->Release();
+
+	delete textureMaterial;
+
+	//delete basic entities
+	delete entity;
+	delete entity2;
+
+	//delete meshes
+	delete cube;
+	delete sphere;
+	
 
 	// Delete our simple shader objects, which
 	// will clean up their own internal DirectX stuff
 	delete vertexShader;
 	delete pixelShader;
 
-	//Clean up entities, meshes, cameras, etc.
+	//Clean up cameras.
 	delete mainCamera;
 
 
-	//delete paddles and puck
+	//delete paddles puck and table.
 	delete player1;
 	delete player2;
+	delete table;
+	//delete puck;  //puck not crrently being created anywhere
 }
 
 // --------------------------------------------------------

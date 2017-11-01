@@ -15,7 +15,7 @@ Material::Material(SimpleVertexShader * a_vShader, SimplePixelShader * a_pShader
 	sampler = a_sampler;
 }
 
-void Material::Release()
+Material::~Material()
 {
 }
 

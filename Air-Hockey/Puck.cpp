@@ -52,6 +52,11 @@ void Puck::CollisionDetection(Paddle a_paddle)
 	
 }
 
+void Puck::RandomVelocity()
+{
+	float randNum = rand() % 10 + 1;
+	velocity = XMVectorSet(randNum, 0, randNum, 0);
+}
 
 void Puck::Reset()
 {
