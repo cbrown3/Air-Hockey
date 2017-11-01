@@ -81,6 +81,13 @@ Game::~Game()
 	delete player2;
 	delete table;
 	//delete puck;  //puck not crrently being created anywhere
+
+	//delete shadow related things
+	shadowDepthView->Release();
+	shadowMapSRV->Release();
+	shadowSampler->Release();
+	shadowRasterizer->Release();
+	delete shadowVS;
 }
 
 // --------------------------------------------------------
@@ -104,22 +111,71 @@ void Game::Init()
 		L"Assets/Textures/design.jpg",
 		0,
 		&designTextureSRV);
-
-	//CreateWICTextureFromFile(
-		//device,		//The device handles creating new resources (like textures)
-		//context,	//context
-		//L"Assets/Textures/wood.jpg",
-	    //0,
-		//&woodTextureSRV);
-
+	
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
 		context,	//context
 		L"Assets/Textures/fabric.JPG",
 		0,
 		&fabricTextureSRV);
+	
 
+	//Shadow related stuff
+	shadowMapSize = 1024;
 
+	D3D11_TEXTURE2D_DESC shadowTexDesc = {};
+	shadowTexDesc.Width = shadowMapSize;
+	shadowTexDesc.Height = shadowMapSize;
+	shadowTexDesc.ArraySize = 1;
+	shadowTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	shadowTexDesc.CPUAccessFlags = 0;
+	shadowTexDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	shadowTexDesc.MipLevels = 1;
+	shadowTexDesc.MiscFlags = 0;
+	shadowTexDesc.SampleDesc.Count = 1;
+	shadowTexDesc.SampleDesc.Quality = 0;
+	shadowTexDesc.Usage = D3D11_USAGE_DEFAULT;
+	device->CreateTexture2D(&shadowTexDesc, 0, &shadowMapTex);
+
+	//shadow dpeth stencil
+	D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthDesc = {};
+	shadowDepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	shadowDepthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	shadowDepthDesc.Texture2D.MipSlice = 0;
+	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
+
+	//shadow resource view
+	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc = {};
+	shadowSRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	shadowSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shadowSRVDesc.Texture2D.MipLevels = 1;
+	shadowSRVDesc.Texture2D.MostDetailedMip = 0;
+	device->CreateShaderResourceView(shadowMapTex, &shadowSRVDesc, &shadowMapSRV);
+
+	shadowMapTex->Release();
+
+	//shadow sampler state
+	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
+	shadowSamplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+	shadowSamplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
+	shadowSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDesc.BorderColor[0] = 1.0f;
+	shadowSamplerDesc.BorderColor[0] = 1.0f;
+	shadowSamplerDesc.BorderColor[0] = 1.0f;
+	shadowSamplerDesc.BorderColor[0] = 1.0f;
+	device->CreateSamplerState(&shadowSamplerDesc, &shadowSampler);
+
+	D3D11_RASTERIZER_DESC shadowRastDesc = {};
+	shadowRastDesc.FillMode = D3D11_FILL_SOLID;
+	shadowRastDesc.CullMode = D3D11_CULL_BACK;
+	shadowRastDesc.DepthClipEnable = true;
+	shadowRastDesc.DepthBias = 1000;
+	shadowRastDesc.DepthBiasClamp = 0.0f;
+	shadowRastDesc.SlopeScaledDepthBias = 1.0f;
+	device->CreateRasterizerState(&shadowRastDesc, &shadowRasterizer);
+	
 	//Create a sampler state
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -152,6 +208,9 @@ void Game::LoadShaders()
 	pixelShader = new SimplePixelShader(device, context);
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 
+	shadowVS = new SimpleVertexShader(device, context);
+	shadowVS->LoadShaderFile(L"ShadowVs.cso");
+
 	/*CREATE MATERIALS*/
 	textureMaterial = new Material(vertexShader, pixelShader, fabricTextureSRV, sampler);
 }
@@ -169,13 +228,72 @@ void Game::LoadLights()
 	pointLight.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
 }
 
+//Makes the Shadow Map (call each frame at the beginning) (Currently works with the directional light)
+void Game::CreateShadowMap()
+{
+	context->OMSetRenderTargets(0, 0, shadowDepthView);
+	context->ClearDepthStencilView(shadowDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	context->RSSetState(shadowRasterizer);
 
+	//viewport setup
+	D3D11_VIEWPORT viewport = {};
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = (float)shadowMapSize;
+	viewport.Height = (float)shadowMapSize;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &viewport);
+
+	//set shaders
+	shadowVS->SetShader();
+	shadowVS->SetMatrix4x4("view", shadowViewMatrix);
+	shadowVS->SetMatrix4x4("projection", shadowProjMatrix);
+
+	context->PSSetShader(0, 0, 0);
+
+
+	shadowVS->SetMatrix4x4("world", player1->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	player1->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", player2->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	player2->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	table->Draw(context);
+
+	//setting things back to normal
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->RSSetState(0);
+
+	viewport.Width = this->width;
+	viewport.Height = this->height;
+	context->RSSetViewports(1, &viewport);
+}
 
 // --------------------------------------------------------
 // Initializes the matrices necessary to represent our geometry's 
 // transformations and our 3D camera
 // --------------------------------------------------------
 void Game::CreateMatrices()
+{
+	XMMATRIX shadowView = XMMatrixLookAtLH(XMVectorSet(-10, 10, 0, 0), XMVectorSet(0, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
+
+	XMStoreFloat4x4(&shadowViewMatrix, XMMatrixTranspose(shadowView));
+
+	XMMATRIX shadowProj = XMMatrixOrthographicLH(10.0f, 10.0f, 0.1f, 100.0f);
+
+	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
+}
+
+
+// --------------------------------------------------------
+// Creates the geometry we're going to draw - a single triangle for now
+// --------------------------------------------------------
+void Game::CreateBasicGeometry()
 {
 	cube = new Mesh("Assets/Models/cube.obj", device);
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
@@ -201,17 +319,8 @@ void Game::CreateMatrices()
 
 	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -1 to 3
 	table = new GameEntity(cube, textureMaterial);
-	table->SetPosition(0.0f, -1.0f, 1.0f);
+	table->SetPosition(0.0f, -.5f, 1.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
-}
-
-
-// --------------------------------------------------------
-// Creates the geometry we're going to draw - a single triangle for now
-// --------------------------------------------------------
-void Game::CreateBasicGeometry()
-{
-
 }
 
 
@@ -231,6 +340,8 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	
+	CreateShadowMap();
+
 	//Movement for the main object
 	if (GetAsyncKeyState('J') & 0x8000)
 	{
@@ -374,14 +485,17 @@ void Game::Draw(float deltaTime, float totalTime)
 		&pointLight,
 		sizeof(PointLight));
 
+	vertexShader->SetMatrix4x4("shadowViewMat", shadowViewMatrix);
+	vertexShader->SetMatrix4x4("shadowProjMat", shadowProjMatrix);
+
+	pixelShader->SetSamplerState("ShadowSampler", shadowSampler);
+	pixelShader->SetShaderResourceView("ShadowMap", shadowMapSRV);
+
 	pixelShader->SetFloat3("cameraPosition", mainCamera->getPositon()); //sending cam position for specular
 	
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
-
-	
-	
 	pixelShader->SetShaderResourceView("srv", fabricTextureSRV); //NEEDS TO BE SET UP FOR EACH ENTITY, might want to have a way to get srv from the entity, otherwise a lot of manual work needs to be done
 	entity->PrepareMaterial(viewMatrix, projectionMatrix);
 	entity->Draw(context);

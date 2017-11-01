@@ -14,6 +14,7 @@ struct VertexToPixel
 	float3 normal		: NORMAL;       // Normal
 	float2 uv           : TEXCOORD;     // UV
 	float3 worldPos		: POSITION;
+	float4 shadowMapPosition	:	POSITION1;
 };
 
 struct DirectionalLight
@@ -46,8 +47,12 @@ cbuffer ExternalData : register(b0)
 
 
 
-Texture2D srv : register (t0);
+Texture2D srv		:	register(t0);
+Texture2D ShadowMap	:	register(t1);
+
 SamplerState basicSampler : register (s0);
+SamplerComparisonState ShadowSampler : register(s1);
+
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -85,8 +90,20 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 dirToCamera = normalize(cameraPosition - input.worldPos);
 	float pLightSpec = pow(saturate(dot(reflection, dirToCamera)), 64);
 
+
+	//SHADOW STUFF
+
+	float2 shadowUV = input.shadowMapPosition.xy / input.shadowMapPosition.w * 0.5f + 0.5f;
+	shadowUV.y = 1.0f - shadowUV.y;
+
+	float depthFromLight = input.shadowMapPosition.z / input.shadowMapPosition.w;
+
+	float shadowAmount = ShadowMap.SampleCmpLevelZero(ShadowSampler, shadowUV, depthFromLight);
+
+	//return float4(shadowAmount, 0, 0, 1);
+
 	
-	float4 finalLight = (((pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount) + pLightSpec) + (light.AmbientColor + (light.DiffuseColor * dirLightAmount)) + (pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount))) * surfaceColor);
+	float4 finalLight = shadowAmount * (((pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount) + pLightSpec) + (light.AmbientColor + (light.DiffuseColor * dirLightAmount)) + (pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount))) * surfaceColor);
 
 	//return pLight.AmbientColor;
 	//return pLight.AmbientColor + (pLightAmount * pLight.DiffuseColor);

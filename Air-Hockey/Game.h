@@ -42,6 +42,9 @@ private:
 	void LoadLights();
 	void CreateMatrices();
 	void CreateBasicGeometry();
+	void CreateShadowMap();
+
+
 
 	// Buffers to hold actual geometry data
 	ID3D11Buffer* triVertBuffer;
@@ -59,6 +62,18 @@ private:
 	// Wrappers for DirectX shaders to provide simplified functionality
 	SimpleVertexShader* vertexShader;
 	SimplePixelShader* pixelShader;
+
+	//For Shadow Mapping
+	int shadowMapSize;
+	ID3D11ShaderResourceView* shadowMapSRV;
+	ID3D11Texture2D* shadowMapTex;
+	ID3D11DepthStencilView* shadowDepthView;
+	ID3D11SamplerState* shadowSampler;
+	ID3D11RasterizerState* shadowRasterizer;
+
+	SimpleVertexShader* shadowVS;
+
+	XMFLOAT4X4 shadowViewMatrix, shadowProjMatrix;
 
 	// The matrices to go from model space to screen space
 	DirectX::XMFLOAT4X4 worldMatrix;
