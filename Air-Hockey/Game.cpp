@@ -80,9 +80,14 @@ Game::~Game()
 	//delete paddles puck and table.
 	delete player1;
 	delete player2;
+	delete puck;
 	delete table;
+<<<<<<< HEAD
 	delete puck;
 	//delete puck;  //puck not crrently being created anywhere
+=======
+	//puck not crrently being created anywhere
+>>>>>>> bb88f3488f498911cc6f031b6090caa53a73ad09
 
 	//delete shadow related things
 	shadowDepthView->Release();
@@ -222,7 +227,7 @@ void Game::LoadLights()
 	dirLight = DirectionalLight();
 
 	dirLight.AmbientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
-	dirLight.DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	dirLight.DiffuseColor = XMFLOAT4(.6f, .6f, .6f, 1.0f);
 	dirLight.Direction = XMFLOAT3(1.0f, -1.0f, 0.0f);
 
 	pointLight.AmbientColor = XMFLOAT4(0.1f, 0.0f, 0.0f, 1.0f);
@@ -304,9 +309,14 @@ void Game::CreateBasicGeometry()
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
 	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 
+<<<<<<< HEAD
 	player1 = new Paddle(cube, textureMaterial);
 	player2 = new Paddle(cube, textureMaterial);
 	puck = new Puck(cylinder, textureMaterial);
+=======
+	player1 = new Paddle(cylinder, textureMaterial);
+	player2 = new Paddle(cylinder, textureMaterial);
+>>>>>>> bb88f3488f498911cc6f031b6090caa53a73ad09
 
 	player1->SetPosition(-2.5f, 0.0f, 0.0f);
 	player2->SetPosition(2.5f, 0.0f, 0.0f);
@@ -326,11 +336,16 @@ void Game::CreateBasicGeometry()
 	entity2->SetScale(.01f, .01f,  .01f);
 	entity2->UpdateWorldMatrix();
 
-
-	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -1 to 3
+	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
 	table = new GameEntity(cube, textureMaterial);
 	table->SetPosition(0.0f, -.5f, 0.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
+	table->UpdateWorldMatrix();
+	//
+	puck = new Puck(cylinder, textureMaterial);
+	puck->SetScale(0.5f, 0.1f, 0.5f);
+	puck->SetPosition(0.0f, -.2f, 0.0f);
+	puck->UpdateWorldMatrix();
 }
 
 
@@ -355,6 +370,18 @@ void Game::Update(float deltaTime, float totalTime)
 	puck->CollisionDetection(player2);
 
 	CreateShadowMap();
+
+	//puck movement and collision
+
+	puck->Update(deltaTime, totalTime);
+	puck->CollisionDetection(*player1);
+	puck->CollisionDetection(*player2);
+	if(puck->checkScore()==1)
+		std::cout << "player 1 scored";
+	if (puck->checkScore() == 2)
+		std::cout << "player 2 scored";
+
+	pointLight.Position = XMFLOAT3(puck->GetPosition().x, 0.5f, puck->GetPosition().z);
 
 	//Movement for the main object
 	if (GetAsyncKeyState('J') & 0x8000)
