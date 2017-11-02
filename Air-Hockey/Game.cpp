@@ -82,12 +82,6 @@ Game::~Game()
 	delete player2;
 	delete puck;
 	delete table;
-<<<<<<< HEAD
-	delete puck;
-	//delete puck;  //puck not crrently being created anywhere
-=======
-	//puck not crrently being created anywhere
->>>>>>> bb88f3488f498911cc6f031b6090caa53a73ad09
 
 	//delete shadow related things
 	shadowDepthView->Release();
@@ -309,14 +303,10 @@ void Game::CreateBasicGeometry()
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
 	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 
-<<<<<<< HEAD
-	player1 = new Paddle(cube, textureMaterial);
-	player2 = new Paddle(cube, textureMaterial);
+
 	puck = new Puck(cylinder, textureMaterial);
-=======
 	player1 = new Paddle(cylinder, textureMaterial);
 	player2 = new Paddle(cylinder, textureMaterial);
->>>>>>> bb88f3488f498911cc6f031b6090caa53a73ad09
 
 	player1->SetPosition(-2.5f, 0.0f, 0.0f);
 	player2->SetPosition(2.5f, 0.0f, 0.0f);
@@ -329,12 +319,12 @@ void Game::CreateBasicGeometry()
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
 
-	entity = new GameEntity(sphere, textureMaterial);
+	/*entity = new GameEntity(sphere, textureMaterial);
 	entity2 = new GameEntity(sphere, textureMaterial);
 	entity->SetPosition(20.0f, 1.0f, 0.0f);
 	entity->UpdateWorldMatrix();
 	entity2->SetScale(.01f, .01f,  .01f);
-	entity2->UpdateWorldMatrix();
+	entity2->UpdateWorldMatrix();*/
 
 	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
 	table = new GameEntity(cube, textureMaterial);
@@ -373,9 +363,10 @@ void Game::Update(float deltaTime, float totalTime)
 
 	//puck movement and collision
 
-	puck->Update(deltaTime, totalTime);
-	puck->CollisionDetection(*player1);
-	puck->CollisionDetection(*player2);
+	puck->Update(deltaTime);
+	puck->CollisionDetection(player1);
+	puck->CollisionDetection(player2);
+
 	if(puck->checkScore()==1)
 		std::cout << "player 1 scored";
 	if (puck->checkScore() == 2)
@@ -390,7 +381,7 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 	if (GetAsyncKeyState('I') & 0x8000)
 	{
-		player2->MoveAbsolute(0.0f, 0.0f, 3 * deltaTime);
+		player2->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
 
 		if (player2->GetPosition().z > 1)
 		{
@@ -400,7 +391,7 @@ void Game::Update(float deltaTime, float totalTime)
 	}
 	if (GetAsyncKeyState('K') & 0x8000)
 	{
-		player2->MoveAbsolute(0.0f, 0.0f, -3 * deltaTime);
+		player2->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
 		
 		if (player2->GetPosition().z < -1)
 		{
@@ -426,7 +417,7 @@ void Game::Update(float deltaTime, float totalTime)
 		lastHit = totalTime + 1;
 	}
 
-	entity->UpdateWorldMatrix();
+	//entity->UpdateWorldMatrix();
 	if (DebugModeActive) {
 		if (GetAsyncKeyState('W') & 0x8000)
 		{
@@ -538,12 +529,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
 	pixelShader->SetShaderResourceView("srv", fabricTextureSRV); //NEEDS TO BE SET UP FOR EACH ENTITY, might want to have a way to get srv from the entity, otherwise a lot of manual work needs to be done
-	entity->PrepareMaterial(viewMatrix, projectionMatrix);
-	entity->Draw(context);
+	//entity->PrepareMaterial(viewMatrix, projectionMatrix);
+	//entity->Draw(context);
 
 	pixelShader->SetShaderResourceView("srv", designTextureSRV); //Same as above
-	entity2->PrepareMaterial(viewMatrix, projectionMatrix);
-	entity2->Draw(context);
+	//entity2->PrepareMaterial(viewMatrix, projectionMatrix);
+	//entity2->Draw(context);
 
 	player1->PrepareMaterial(viewMatrix, projectionMatrix);
 	player1->Draw(context);
