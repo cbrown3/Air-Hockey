@@ -4,8 +4,9 @@
 
 Puck::Puck(Mesh* a_mesh, Material* a_mat): GameEntity(a_mesh, a_mat)
 {
-	RandomVelocity();
-	Update();
+	setDirection(1.0f, 0.0f, 1.0f);
+	speed = 2.5f;
+	velocity = direction * speed;
 }
 
 Puck::~Puck()
@@ -32,55 +33,69 @@ void Puck::setVelocity(float x, float y, float z)
 	velocity = XMVectorSet(x, y, z, 0);
 }
 
-void Puck::CollisionDetection(Paddle a_paddle)
+void Puck::CollisionDetection(Paddle* a_paddle)
 {
-	XMVECTOR paddlePos = XMLoadFloat3(&a_paddle.GetPosition());
+	XMVECTOR paddlePos = XMLoadFloat3(&a_paddle->GetPosition());
 	XMVECTOR puckPos = XMLoadFloat3(&entityPos);
 
 	//distance between positions
-	//if<radius1+radius2 they collide
-
-	/*
-	Vect1 is the direction of the ball before hitting the wall
-	Vect2 is after the wall
-	WallN is the normal of the cylinder. paddlepos-puckpos normalized
-	DOT is the dot product
-
-	Vect2 = Vect1 - 2 * WallN * (WallN DOT Vect1)	
-	*/
-
+	XMVECTOR diff = XMVectorSubtract(paddlePos, puckPos);
+	XMVECTOR length = XMVector3Length(diff);
 	
-}
+	float dist = 0.0f;
 
-void Puck::RandomVelocity()
-{
-	float randNum = rand() % 10 + 1;
-	velocity = XMVectorSet(randNum, 0, randNum, 0);
+	XMStoreFloat(&dist, length);
+
+	float radii = GetScale().x + a_paddle->GetScale().x;
+	//if<radius1+radius2 they collide
+	if (radii > dist)
+	{
+		XMVECTOR wallN = XMVector3Normalize(diff);
+		XMVECTOR newDir = direction - 2 * wallN * XMVector3Dot(wallN, direction);
+		XMFLOAT3 floatDir = XMFLOAT3();
+		XMStoreFloat3(&floatDir, newDir);
+
+		setDirection(floatDir.x, floatDir.y, floatDir.z);
+		
+	}
 }
 
 void Puck::Reset()
 {
-	SetPosition(0, 0, 0);
+	SetPosition(0, -0.15f, 0);
 }
 
-void Puck::Update()
+void Puck::Update(float dt)
 {
 	//check for wall collision and scoring
 	//for walls if collides x=-x or z=-z
 
+	XMStoreFloat3(&puckDir, direction);
+
+	//Checking for Wall Collision
+	if (GetPosition().x > 4.0f)
+	{
+		setDirection(-1.0f, 0.0f, puckDir.z);
+	}
+	if (GetPosition().x < -4.0f)
+	{
+		setDirection(1.0f, 0.0f, puckDir.z);
+	}
+	if (GetPosition().z > 2.0f)
+	{
+		setDirection(puckDir.x, 0.0f, -1.0f);
+	}
+	if (GetPosition().z < -2.0f)
+	{
+		setDirection(puckDir.x, 0.0f, 1.0f);
+	}
+
+	velocity = direction * speed * dt;
+
 	XMVECTOR puckPos = XMLoadFloat3(&entityPos);
 	puckPos = XMVectorAdd(velocity, puckPos);
 	XMStoreFloat3(&entityPos, puckPos);
-	direction = XMVector3Normalize(velocity);
 
+	entityPos.y = -0.15f;
 
-	//Checking for Wall Collision
-	if (GetPosition().x > 2.5)
-	{
-		Reset();
-	}
-	if (GetPosition().x < -2.5)
-	{
-		Reset();
-	}
 }

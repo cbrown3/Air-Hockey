@@ -16,14 +16,15 @@ public:
 	void setVelocity(float x, float y, float z);
 
 	/*Other Methods*/
-	void CollisionDetection(Paddle a_paddle);
+	void CollisionDetection(Paddle* a_paddle);
 	void Reset();
-	void RandomVelocity();
-	void Update();
+	void Update(float dt);
 
 private:
 	XMVECTOR direction;
 	XMVECTOR velocity;
+	XMFLOAT3 puckDir;
+	float speed;
 	int radius;
 
 };

@@ -65,6 +65,7 @@ Game::~Game()
 	//delete meshes
 	delete cube;
 	delete sphere;
+	delete cylinder;
 	
 
 	// Delete our simple shader objects, which
@@ -80,6 +81,7 @@ Game::~Game()
 	delete player1;
 	delete player2;
 	delete table;
+	delete puck;
 	//delete puck;  //puck not crrently being created anywhere
 
 	//delete shadow related things
@@ -252,7 +254,6 @@ void Game::CreateShadowMap()
 
 	context->PSSetShader(0, 0, 0);
 
-
 	shadowVS->SetMatrix4x4("world", player1->GetWorldMatrix());
 	shadowVS->CopyAllBufferData();
 	player1->Draw(context);
@@ -264,6 +265,10 @@ void Game::CreateShadowMap()
 	shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
 	shadowVS->CopyAllBufferData();
 	table->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", puck->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	puck->Draw(context);
 
 	//setting things back to normal
 	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
@@ -297,29 +302,34 @@ void Game::CreateBasicGeometry()
 {
 	cube = new Mesh("Assets/Models/cube.obj", device);
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
+	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 
 	player1 = new Paddle(cube, textureMaterial);
 	player2 = new Paddle(cube, textureMaterial);
+	puck = new Puck(cylinder, textureMaterial);
 
 	player1->SetPosition(-2.5f, 0.0f, 0.0f);
 	player2->SetPosition(2.5f, 0.0f, 0.0f);
+	puck->SetPosition(0.0f, -0.15f, 0.0f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
+	puck->SetScale(0.45f, 0.15f, 0.45f);
 
 	player1->UpdateWorldMatrix();
 	player2->UpdateWorldMatrix();
+	puck->UpdateWorldMatrix();
 
 	entity = new GameEntity(sphere, textureMaterial);
 	entity2 = new GameEntity(sphere, textureMaterial);
 	entity->SetPosition(20.0f, 1.0f, 0.0f);
 	entity->UpdateWorldMatrix();
-	entity2->SetScale(.01f, .01f, .01f);
+	entity2->SetScale(.01f, .01f,  .01f);
 	entity2->UpdateWorldMatrix();
 
 
 	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -1 to 3
 	table = new GameEntity(cube, textureMaterial);
-	table->SetPosition(0.0f, -.5f, 1.0f);
+	table->SetPosition(0.0f, -.5f, 0.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
 }
 
@@ -340,6 +350,10 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	
+	puck->Update(deltaTime);
+	puck->CollisionDetection(player1);
+	puck->CollisionDetection(player2);
+
 	CreateShadowMap();
 
 	//Movement for the main object
@@ -509,6 +523,9 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	player2->PrepareMaterial(viewMatrix, projectionMatrix);
 	player2->Draw(context);
+
+	puck->PrepareMaterial(viewMatrix, projectionMatrix);
+	puck->Draw(context);
 
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
