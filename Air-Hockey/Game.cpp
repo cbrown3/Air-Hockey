@@ -65,6 +65,7 @@ Game::~Game()
 	//delete meshes
 	delete cube;
 	delete sphere;
+	delete cylinder;
 	
 
 	// Delete our simple shader objects, which
@@ -81,7 +82,7 @@ Game::~Game()
 	delete player2;
 	delete puck;
 	delete table;
-	//delete puck;  //puck not crrently being created anywhere
+	//puck not crrently being created anywhere
 
 	//delete shadow related things
 	shadowDepthView->Release();
@@ -221,7 +222,7 @@ void Game::LoadLights()
 	dirLight = DirectionalLight();
 
 	dirLight.AmbientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
-	dirLight.DiffuseColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	dirLight.DiffuseColor = XMFLOAT4(.6f, .6f, .6f, 1.0f);
 	dirLight.Direction = XMFLOAT3(1.0f, -1.0f, 0.0f);
 
 	pointLight.AmbientColor = XMFLOAT4(0.1f, 0.0f, 0.0f, 1.0f);
@@ -265,6 +266,10 @@ void Game::CreateShadowMap()
 	shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
 	shadowVS->CopyAllBufferData();
 	table->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", puck->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	puck->Draw(context);
 
 	//setting things back to normal
 	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
@@ -322,10 +327,12 @@ void Game::CreateBasicGeometry()
 	table = new GameEntity(cube, textureMaterial);
 	table->SetPosition(0.0f, -.5f, 0.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
-
+	table->UpdateWorldMatrix();
 	//
 	puck = new Puck(cylinder, textureMaterial);
 	puck->SetScale(0.5f, 0.1f, 0.5f);
+	puck->SetPosition(0.0f, -.2f, 0.0f);
+	puck->UpdateWorldMatrix();
 }
 
 
@@ -357,6 +364,7 @@ void Game::Update(float deltaTime, float totalTime)
 	if (puck->checkScore() == 2)
 		std::cout << "player 2 scored";
 
+	pointLight.Position = XMFLOAT3(puck->GetPosition().x, 0.5f, puck->GetPosition().z);
 
 	//Movement for the main object
 	if (GetAsyncKeyState('J') & 0x8000)

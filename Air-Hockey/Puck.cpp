@@ -58,7 +58,7 @@ void Puck::CollisionDetection(Paddle a_paddle)
 		XMStoreFloat3(&velocity, tempVel);
 		velocity.y = 0;
 	}
-	
+		
 }
 
 void Puck::RandomVelocity()
@@ -96,6 +96,8 @@ void Puck::Update(float deltaTime, float totalTime)
 	{
 		setVelocity(velocity.x, 0.0f, -velocity.z);
 	}
+
+	
 }
 
 int Puck::checkScore()
