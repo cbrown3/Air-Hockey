@@ -10,8 +10,8 @@ public:
 	~Puck();
 
 	/*Gets and Sets*/
-	XMVECTOR getDirecton();
-	XMVECTOR getVelocity();
+	XMFLOAT3 getDirecton();
+	XMFLOAT3 getVelocity();
 	void setDirection(float x, float y, float z);
 	void setVelocity(float x, float y, float z);
 
@@ -19,11 +19,12 @@ public:
 	void CollisionDetection(Paddle a_paddle);
 	void Reset();
 	void RandomVelocity();
-	void Update();
+	void Update(float deltaTime, float totalTime);
+	int checkScore();
 
 private:
-	XMVECTOR direction;
-	XMVECTOR velocity;
+	XMFLOAT3 direction;
+	XMFLOAT3 velocity;
 	int radius;
 
 };

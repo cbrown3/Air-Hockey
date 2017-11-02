@@ -10,6 +10,7 @@
 #include "Light.h"
 #include "Paddle.h"
 #include "Puck.h"
+#include <iostream>
 
 class Game
 	: public DXCore
@@ -83,6 +84,7 @@ private:
 	//Meshes
 	Mesh* cube;
 	Mesh* sphere;
+	Mesh* cylinder;
 
 	//Entities
 	GameEntity* entity;

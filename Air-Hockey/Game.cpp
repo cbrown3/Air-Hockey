@@ -79,6 +79,7 @@ Game::~Game()
 	//delete paddles puck and table.
 	delete player1;
 	delete player2;
+	delete puck;
 	delete table;
 	//delete puck;  //puck not crrently being created anywhere
 
@@ -297,9 +298,10 @@ void Game::CreateBasicGeometry()
 {
 	cube = new Mesh("Assets/Models/cube.obj", device);
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
+	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 
-	player1 = new Paddle(cube, textureMaterial);
-	player2 = new Paddle(cube, textureMaterial);
+	player1 = new Paddle(cylinder, textureMaterial);
+	player2 = new Paddle(cylinder, textureMaterial);
 
 	player1->SetPosition(-2.5f, 0.0f, 0.0f);
 	player2->SetPosition(2.5f, 0.0f, 0.0f);
@@ -316,11 +318,14 @@ void Game::CreateBasicGeometry()
 	entity2->SetScale(.01f, .01f, .01f);
 	entity2->UpdateWorldMatrix();
 
-
-	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -1 to 3
+	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
 	table = new GameEntity(cube, textureMaterial);
-	table->SetPosition(0.0f, -.5f, 1.0f);
+	table->SetPosition(0.0f, -.5f, 0.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
+
+	//
+	puck = new Puck(cylinder, textureMaterial);
+	puck->SetScale(0.5f, 0.1f, 0.5f);
 }
 
 
@@ -341,6 +346,17 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	
 	CreateShadowMap();
+
+	//puck movement and collision
+
+	puck->Update(deltaTime, totalTime);
+	puck->CollisionDetection(*player1);
+	puck->CollisionDetection(*player2);
+	if(puck->checkScore()==1)
+		std::cout << "player 1 scored";
+	if (puck->checkScore() == 2)
+		std::cout << "player 2 scored";
+
 
 	//Movement for the main object
 	if (GetAsyncKeyState('J') & 0x8000)
@@ -509,6 +525,9 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	player2->PrepareMaterial(viewMatrix, projectionMatrix);
 	player2->Draw(context);
+
+	puck->PrepareMaterial(viewMatrix, projectionMatrix);
+	puck->Draw(context);
 
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
