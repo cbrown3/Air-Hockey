@@ -58,10 +58,6 @@ Game::~Game()
 
 	delete textureMaterial;
 
-	//delete basic entities
-	delete entity;
-	delete entity2;
-
 	//delete meshes
 	delete cube;
 	delete sphere;
@@ -193,6 +189,8 @@ void Game::Init()
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	std::cout << "\nGame Has Started\n";
+
 }
 
 // --------------------------------------------------------
@@ -319,13 +317,6 @@ void Game::CreateBasicGeometry()
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
 
-	/*entity = new GameEntity(sphere, textureMaterial);
-	entity2 = new GameEntity(sphere, textureMaterial);
-	entity->SetPosition(20.0f, 1.0f, 0.0f);
-	entity->UpdateWorldMatrix();
-	entity2->SetScale(.01f, .01f,  .01f);
-	entity2->UpdateWorldMatrix();*/
-
 	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
 	table = new GameEntity(cube, textureMaterial);
 	table->SetPosition(0.0f, -.5f, 0.0f);
@@ -361,47 +352,25 @@ void Game::Update(float deltaTime, float totalTime)
 
 	CreateShadowMap();
 
-	//puck movement and collision
-
+	//Puck Movement and Collision
 	puck->Update(deltaTime);
 	puck->CollisionDetection(player1);
 	puck->CollisionDetection(player2);
-
-	if(puck->checkScore()==1)
-		std::cout << "player 1 scored";
-	if (puck->checkScore() == 2)
-		std::cout << "player 2 scored";
-
+	//Update Point Light Direction
 	pointLight.Position = XMFLOAT3(puck->GetPosition().x, 0.5f, puck->GetPosition().z);
 
-	//Movement for the main object
-	if (GetAsyncKeyState('J') & 0x8000)
-	{
-		
-	}
-	if (GetAsyncKeyState('I') & 0x8000)
-	{
-		player2->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
+	//Paddle Movement
+	PlayerMovement(deltaTime);
 
-		if (player2->GetPosition().z > 1)
-		{
-			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, 1);
-		}
+	score = puck->checkScore();
 
-	}
-	if (GetAsyncKeyState('K') & 0x8000)
-	{
-		player2->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
-		
-		if (player2->GetPosition().z < -1)
-		{
-			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, -1);
-		}
-	}
-	if (GetAsyncKeyState('L') & 0x8000)
-	{
-	
-	}
+	//Score
+	if(score == 1)
+		std::cout << "player 1 scored\n";
+
+	if (score == 2)
+		std::cout << "player 2 scored\n";
+
 
 	if (GetAsyncKeyState('T') & 0x8000 && (totalTime > lastHit)) 
 	{
@@ -416,65 +385,6 @@ void Game::Update(float deltaTime, float totalTime)
 
 		lastHit = totalTime + 1;
 	}
-
-	//entity->UpdateWorldMatrix();
-	if (DebugModeActive) {
-		if (GetAsyncKeyState('W') & 0x8000)
-		{
-			mainCamera->MoveForward();
-		}
-		if (GetAsyncKeyState('A') & 0x8000)
-		{
-			mainCamera->StrafeLeft();
-		}
-		if (GetAsyncKeyState('S') & 0x8000)
-		{
-			mainCamera->MoveBack();
-		}
-		if (GetAsyncKeyState('D') & 0x8000)
-		{
-			mainCamera->StrafeRight();
-		}
-		if (GetAsyncKeyState('E') & 0x8000)
-		{
-			mainCamera->MoveUp();
-		}
-		if (GetAsyncKeyState('Q') & 0x8000)
-		{
-			mainCamera->MoveDown();
-		}
-	}
-	else
-	{
-		if (GetAsyncKeyState('W') & 0x8000)
-		{
-			player1->MoveAbsolute(0.0f, 0.0f, 3 * deltaTime);
-
-			if (player1->GetPosition().z > 1)
-			{
-				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, 1);
-			}
-		}
-		if (GetAsyncKeyState('A') & 0x8000)
-		{
-			
-		}
-		if (GetAsyncKeyState('S') & 0x8000)
-		{
-			player1->MoveAbsolute(0.0f, 0.0f, -3 * deltaTime);
-
-			if (player1->GetPosition().z < -1)
-			{
-				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, -1);
-			}
-		}
-		if (GetAsyncKeyState('D') & 0x8000)
-		{
-			
-		}
-
-	}
-	
 
 	mainCamera->Update();
 
@@ -551,6 +461,120 @@ void Game::Draw(float deltaTime, float totalTime)
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
 	swapChain->Present(0, 0);
+}
+
+void Game::PlayerMovement(float deltaTime)
+{
+	//Movement for Player 1
+	if (DebugModeActive == false)
+	{
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			player1->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
+
+			if (player1->GetPosition().z > 1.75f)
+			{
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, 1.75f);
+			}
+		}
+		if (GetAsyncKeyState('D') & 0x8000)
+		{
+			player1->MoveAbsolute(5 * deltaTime, 0.0f, 0.0f);
+
+			if (player1->GetPosition().x > -0.25f)
+			{
+				player1->SetPosition(-0.25f, player1->GetPosition().y, player1->GetPosition().z);
+			}
+		}
+		if (GetAsyncKeyState('S') & 0x8000)
+		{
+			player1->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
+
+			if (player1->GetPosition().z < -1.75f)
+			{
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, -1.75f);
+			}
+		}
+		if (GetAsyncKeyState('A') & 0x8000)
+		{
+			player1->MoveAbsolute(-5 * deltaTime, 0.0f, 0.0f);
+
+			if (player1->GetPosition().x < -3.75f)
+			{
+				player1->SetPosition(-3.75f, player1->GetPosition().y, player1->GetPosition().z);
+			}
+		}
+	}
+
+	//Movement for Player 2
+	if (GetAsyncKeyState('L') & 0x8000)
+	{
+		player2->MoveAbsolute(5 * deltaTime, 0.0f, 0.0f);
+
+		if (player2->GetPosition().x > 3.75f)
+		{
+			player2->SetPosition(3.75f, player2->GetPosition().y, player2->GetPosition().z);
+		}
+	}
+	if (GetAsyncKeyState('I') & 0x8000)
+	{
+		player2->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
+
+		if (player2->GetPosition().z > 1.75f)
+		{
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, 1.75f);
+		}
+
+	}
+	if (GetAsyncKeyState('K') & 0x8000)
+	{
+		player2->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
+
+		if (player2->GetPosition().z < -1.75f)
+		{
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, -1.75f);
+		}
+	}
+	if (GetAsyncKeyState('J') & 0x8000)
+	{
+		player2->MoveAbsolute(-5 * deltaTime, 0.0f, 0.0f);
+
+		if (player2->GetPosition().x < 0.25f)
+		{
+			player2->SetPosition(0.25f, player2->GetPosition().y, player2->GetPosition().z);
+		}
+	}
+}
+
+void Game::CameraMovement()
+{
+	if (DebugModeActive)
+	{
+		if (GetAsyncKeyState('W') & 0x8000)
+		{
+			mainCamera->MoveForward();
+		}
+		if (GetAsyncKeyState('A') & 0x8000)
+		{
+			mainCamera->StrafeLeft();
+		}
+		if (GetAsyncKeyState('S') & 0x8000)
+		{
+			mainCamera->MoveBack();
+		}
+		if (GetAsyncKeyState('D') & 0x8000)
+		{
+			mainCamera->StrafeRight();
+		}
+		if (GetAsyncKeyState('E') & 0x8000)
+		{
+			mainCamera->MoveUp();
+		}
+		if (GetAsyncKeyState('Q') & 0x8000)
+		{
+			mainCamera->MoveDown();
+		}
+	}
 }
 
 

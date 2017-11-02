@@ -53,8 +53,10 @@ void Puck::CollisionDetection(Paddle* a_paddle)
 
 	XMStoreFloat(&dist, length);
 
+	float radii = GetScale().x + a_paddle->GetScale().x;
+
 	//if<radius1+radius2 they collide
-	if (0.5f > dist)
+	if (radii > dist)
 	{
 		XMVECTOR wallN = XMVector3Normalize(diff);
 		XMVECTOR newDir = direction - 2 * wallN * XMVector3Dot(wallN, direction);

@@ -26,6 +26,8 @@ public:
 	void OnResize();
 	void Update(float deltaTime, float totalTime);
 	void Draw(float deltaTime, float totalTime);
+	void PlayerMovement(float deltaTime);
+	void CameraMovement();
 
 	// Overridden mouse input helper methods
 	void OnMouseDown(WPARAM buttonState, int x, int y);
@@ -44,8 +46,6 @@ private:
 	void CreateMatrices();
 	void CreateBasicGeometry();
 	void CreateShadowMap();
-
-
 
 	// Buffers to hold actual geometry data
 	ID3D11Buffer* triVertBuffer;
@@ -81,6 +81,9 @@ private:
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
+	//Score
+	int score;
+
 	//Meshes
 	Mesh* cube;
 	Mesh* sphere;
@@ -96,8 +99,6 @@ private:
 	Puck* puck;
 
 	GameEntity* table;
-
-
 
 	//Cameras
 	Camera* mainCamera;
