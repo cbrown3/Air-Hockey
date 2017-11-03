@@ -53,7 +53,7 @@ Game::~Game()
 {
 	//Clean up 
 	designTextureSRV->Release();
-	fabricTextureSRV->Release();
+	designNormMapSRV->Release();
 	sampler->Release();
 
 	delete textureMaterial;
@@ -108,14 +108,13 @@ void Game::Init()
 		L"Assets/Textures/design.jpg",
 		0,
 		&designTextureSRV);
-	
+
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
 		context,	//context
-		L"Assets/Textures/fabric.JPG",
+		L"Assets/Textures/designNormal.jpg",
 		0,
-		&fabricTextureSRV);
-	
+		&designNormMapSRV);
 
 	//Shadow related stuff
 	shadowMapSize = 1024;
@@ -211,7 +210,7 @@ void Game::LoadShaders()
 	shadowVS->LoadShaderFile(L"ShadowVs.cso");
 
 	/*CREATE MATERIALS*/
-	textureMaterial = new Material(vertexShader, pixelShader, fabricTextureSRV, sampler);
+	textureMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
 }
 
 void Game::LoadLights()
@@ -427,6 +426,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		&pointLight,
 		sizeof(PointLight));
 
+	//Sending Normal Map to Pixel Shader
+	pixelShader->SetShaderResourceView("NormalMap", designNormMapSRV);
+
 	vertexShader->SetMatrix4x4("shadowViewMat", shadowViewMatrix);
 	vertexShader->SetMatrix4x4("shadowProjMat", shadowProjMatrix);
 
@@ -437,10 +439,6 @@ void Game::Draw(float deltaTime, float totalTime)
 	
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
-
-	pixelShader->SetShaderResourceView("srv", fabricTextureSRV); //NEEDS TO BE SET UP FOR EACH ENTITY, might want to have a way to get srv from the entity, otherwise a lot of manual work needs to be done
-	//entity->PrepareMaterial(viewMatrix, projectionMatrix);
-	//entity->Draw(context);
 
 	pixelShader->SetShaderResourceView("srv", designTextureSRV); //Same as above
 	//entity2->PrepareMaterial(viewMatrix, projectionMatrix);

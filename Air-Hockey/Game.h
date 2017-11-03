@@ -121,8 +121,9 @@ private:
 	//using them with shaders
 	ID3D11ShaderResourceView* designTextureSRV;
 	ID3D11ShaderResourceView* woodTextureSRV;
-	ID3D11ShaderResourceView* fabricTextureSRV;
 
+	//Normal Mapping
+	ID3D11ShaderResourceView* designNormMapSRV;
 
 	//Needed for sampling options (like filter and address modes)
 	ID3D11SamplerState* sampler;

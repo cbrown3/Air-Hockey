@@ -13,6 +13,7 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;
 	float3 normal		: NORMAL;       // Normal
 	float2 uv           : TEXCOORD;     // UV
+	float3 tangent		: TANGENT;
 	float3 worldPos		: POSITION;
 	float4 shadowMapPosition	:	POSITION1;
 };
@@ -49,7 +50,7 @@ cbuffer ExternalData : register(b0)
 
 Texture2D srv		:	register(t0);
 Texture2D ShadowMap	:	register(t1);
-
+Texture2D NormalMap :	register(t2);
 SamplerState basicSampler : register (s0);
 SamplerComparisonState ShadowSampler : register(s1);
 
@@ -65,14 +66,26 @@ SamplerComparisonState ShadowSampler : register(s1);
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	
+	//Re-normalizing interpolated normals
+	input.normal = normalize(input.normal);
+	input.tangent = normalize(input.tangent);
+
+	//Unpack normal from texture sample
+	float3 unpackedNormal = NormalMap.Sample(basicSampler, input.uv).xyz * 2.0f - 1.0f;
+
+	//Create the TBN matrix (Tangent, Bi-Tangent, Normal)
+	float3 N = input.normal;
+	float3 T = normalize(input.tangent - N * dot(input.tangent, N));
+	float3 B = cross(T, N);
+	float3x3 TBN = float3x3(T, B, N);
+
+	// Overwrite the existing normal (we've been using for lighting),
+	// with the version from the normal map, AFTER we convert to
+	// world space
+	input.normal = normalize(mul(unpackedNormal, TBN));
+
 	//Adjust the variables below as necessary to work with your own code
 	float4 surfaceColor = srv.Sample(basicSampler, input.uv);
-
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-	input.normal = normalize(input.normal);
 
 	float dirLightAmount = saturate(dot(input.normal, -light.Direction));
 	//dirLightAmount = clamp(dirLightAmount, 0.0f, 0.25f);
