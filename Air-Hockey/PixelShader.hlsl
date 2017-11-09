@@ -101,7 +101,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//Point Light Specular Calculations
 	float3 reflection = reflect(-pLightDir, input.normal);
 	float3 dirToCamera = normalize(cameraPosition - input.worldPos);
-	float pLightSpec = pow(saturate(dot(reflection, dirToCamera)), 64);
+	float pLightSpec = 0;//pow(saturate(dot(reflection, dirToCamera)), 64);
 
 
 	//SHADOW STUFF

@@ -53,7 +53,7 @@ Game::~Game()
 {
 	//Clean up 
 	designTextureSRV->Release();
-	designNormMapSRV->Release();
+	//designNormMapSRV->Release();
 	sampler->Release();
 
 	delete textureMaterial;
@@ -223,7 +223,7 @@ void Game::LoadLights()
 
 	pointLight.AmbientColor = XMFLOAT4(0.1f, 0.0f, 0.0f, 1.0f);
 	pointLight.DiffuseColor = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	pointLight.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	pointLight.Position = XMFLOAT3(0.0f, -0.1f, 0.0f);
 }
 
 //Makes the Shadow Map (call each frame at the beginning) (Currently works with the directional light)
@@ -345,9 +345,6 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	
-	puck->Update(deltaTime);
-	puck->CollisionDetection(player1);
-	puck->CollisionDetection(player2);
 
 	CreateShadowMap();
 
@@ -356,10 +353,13 @@ void Game::Update(float deltaTime, float totalTime)
 	puck->CollisionDetection(player1);
 	puck->CollisionDetection(player2);
 	//Update Point Light Direction
-	pointLight.Position = XMFLOAT3(puck->GetPosition().x, 0.5f, puck->GetPosition().z);
+	pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
 
 	//Paddle Movement
 	PlayerMovement(deltaTime);
+
+	//Camera Movement during Debug Mode
+	CameraMovement();
 
 	score = puck->checkScore();
 
@@ -470,36 +470,36 @@ void Game::PlayerMovement(float deltaTime)
 		{
 			player1->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
 
-			if (player1->GetPosition().z > 1.75f)
+			if (player1->GetPosition().z > 1.2f)
 			{
-				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, 1.75f);
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, 1.2f);
 			}
 		}
 		if (GetAsyncKeyState('D') & 0x8000)
 		{
 			player1->MoveAbsolute(5 * deltaTime, 0.0f, 0.0f);
 
-			if (player1->GetPosition().x > -0.25f)
+			if (player1->GetPosition().x > -0.8f)
 			{
-				player1->SetPosition(-0.25f, player1->GetPosition().y, player1->GetPosition().z);
+				player1->SetPosition(-0.8f, player1->GetPosition().y, player1->GetPosition().z);
 			}
 		}
 		if (GetAsyncKeyState('S') & 0x8000)
 		{
 			player1->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
 
-			if (player1->GetPosition().z < -1.75f)
+			if (player1->GetPosition().z < -1.2f)
 			{
-				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, -1.75f);
+				player1->SetPosition(player1->GetPosition().x, player1->GetPosition().y, -1.2f);
 			}
 		}
 		if (GetAsyncKeyState('A') & 0x8000)
 		{
 			player1->MoveAbsolute(-5 * deltaTime, 0.0f, 0.0f);
 
-			if (player1->GetPosition().x < -3.75f)
+			if (player1->GetPosition().x < -3.2f)
 			{
-				player1->SetPosition(-3.75f, player1->GetPosition().y, player1->GetPosition().z);
+				player1->SetPosition(-3.2f, player1->GetPosition().y, player1->GetPosition().z);
 			}
 		}
 	}
@@ -509,18 +509,18 @@ void Game::PlayerMovement(float deltaTime)
 	{
 		player2->MoveAbsolute(5 * deltaTime, 0.0f, 0.0f);
 
-		if (player2->GetPosition().x > 3.75f)
+		if (player2->GetPosition().x > 2.8f)
 		{
-			player2->SetPosition(3.75f, player2->GetPosition().y, player2->GetPosition().z);
+			player2->SetPosition(2.8f, player2->GetPosition().y, player2->GetPosition().z);
 		}
 	}
 	if (GetAsyncKeyState('I') & 0x8000)
 	{
 		player2->MoveAbsolute(0.0f, 0.0f, 5 * deltaTime);
 
-		if (player2->GetPosition().z > 1.75f)
+		if (player2->GetPosition().z > 1.2f)
 		{
-			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, 1.75f);
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, 1.2f);
 		}
 
 	}
@@ -528,18 +528,18 @@ void Game::PlayerMovement(float deltaTime)
 	{
 		player2->MoveAbsolute(0.0f, 0.0f, -5 * deltaTime);
 
-		if (player2->GetPosition().z < -1.75f)
+		if (player2->GetPosition().z < -1.2f)
 		{
-			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, -1.75f);
+			player2->SetPosition(player2->GetPosition().x, player2->GetPosition().y, -1.2f);
 		}
 	}
 	if (GetAsyncKeyState('J') & 0x8000)
 	{
 		player2->MoveAbsolute(-5 * deltaTime, 0.0f, 0.0f);
 
-		if (player2->GetPosition().x < 0.25f)
+		if (player2->GetPosition().x < 0.8f)
 		{
-			player2->SetPosition(0.25f, player2->GetPosition().y, player2->GetPosition().z);
+			player2->SetPosition(0.8f, player2->GetPosition().y, player2->GetPosition().z);
 		}
 	}
 }

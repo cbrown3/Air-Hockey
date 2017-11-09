@@ -1,6 +1,7 @@
 #pragma once
 #include "GameEntity.h"
 #include "Paddle.h"
+#include <iostream>
 
 class Puck :
 	public GameEntity
@@ -10,9 +11,10 @@ public:
 	~Puck();
 
 	/*Gets and Sets*/
-	XMVECTOR getDirecton();
-	XMVECTOR getVelocity();
+	XMFLOAT3 getDirecton();
+	XMFLOAT3 getVelocity();
 	void setDirection(float x, float y, float z);
+	void setDirection(XMVECTOR v);
 	void setVelocity(float x, float y, float z);
 
 	/*Other Methods*/
@@ -22,8 +24,8 @@ public:
 	int checkScore();
 
 private:
-	XMVECTOR direction;
-	XMVECTOR velocity;
+	XMFLOAT3 direction;
+	XMFLOAT3 velocity;
 	float speed;
 
 };
