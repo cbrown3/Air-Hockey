@@ -128,6 +128,14 @@ private:
 	//Needed for sampling options (like filter and address modes)
 	ID3D11SamplerState* sampler;
 
+	// Skybox Shader
+	ID3D11ShaderResourceView* skySRV;
+	SimpleVertexShader* skyVS;
+	SimplePixelShader* skyPS;
+
+	ID3D11RasterizerState* skyRasterState;
+	ID3D11DepthStencilState* skyDepthState;
+
 	// Keeps track of the old mouse position.  Useful for 
 	// determining how far the mouse moved in a single frame.
 	POINT prevMousePos;

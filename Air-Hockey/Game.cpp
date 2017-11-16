@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "WICTextureLoader.h"
+#include "DDSTextureLoader.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -85,6 +86,14 @@ Game::~Game()
 	shadowSampler->Release();
 	shadowRasterizer->Release();
 	delete shadowVS;
+
+	//Delete Skybox things
+	delete skyVS;
+	delete skyPS;
+	skySRV->Release();
+	skyRasterState->Release();
+	skyDepthState->Release();
+
 }
 
 // --------------------------------------------------------
@@ -115,6 +124,29 @@ void Game::Init()
 		L"Assets/Textures/designNormal.jpg",
 		0,
 		&designNormMapSRV);
+
+	CreateDDSTextureFromFile(
+		device,
+		context,
+		L"Assets/Textures/spaceSkyBox.dds",
+		0,
+		&skySRV);
+
+	//States for drawing the sky
+
+	//Rasterize state for drawing the "inside"
+	D3D11_RASTERIZER_DESC skyRD = {};
+	skyRD.CullMode = D3D11_CULL_FRONT;
+	skyRD.FillMode = D3D11_FILL_SOLID;
+	skyRD.DepthClipEnable = true;
+	device->CreateRasterizerState(&skyRD, &skyRasterState);
+
+	//Depth state for accepting pixels with the same depth as the existing depth
+	D3D11_DEPTH_STENCIL_DESC skyDS = {};
+	skyDS.DepthEnable = true;
+	skyDS.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	skyDS.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	device->CreateDepthStencilState(&skyDS, &skyDepthState);
 
 	//Shadow related stuff
 	shadowMapSize = 1024;
@@ -206,8 +238,16 @@ void Game::LoadShaders()
 	pixelShader = new SimplePixelShader(device, context);
 	pixelShader->LoadShaderFile(L"PixelShader.cso");
 
+	//Load in shaders for shadow
 	shadowVS = new SimpleVertexShader(device, context);
 	shadowVS->LoadShaderFile(L"ShadowVs.cso");
+
+	//Load in shaders for sky
+	skyVS = new SimpleVertexShader(device, context);
+	skyVS->LoadShaderFile(L"SkyVS.cso");
+
+	skyPS = new SimplePixelShader(device, context);
+	skyPS->LoadShaderFile(L"SkyPS.cso");
 
 	/*CREATE MATERIALS*/
 	textureMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
@@ -437,12 +477,38 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	pixelShader->SetFloat3("cameraPosition", mainCamera->getPositon()); //sending cam position for specular
 	
+	pixelShader->SetShaderResourceView("SkyTexture", skySRV);
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
 	pixelShader->SetShaderResourceView("srv", designTextureSRV); //Same as above
-	//entity2->PrepareMaterial(viewMatrix, projectionMatrix);
-	//entity2->Draw(context);
+
+	//draw the sky LAST, this should make it so it draws wherever there isn't
+	//already something there and sets the depth to 1.0
+	ID3D11Buffer* skyVB = cylinder->GetVertexBuffer();
+	ID3D11Buffer* skyIB = cylinder->GetIndexBuffer();
+
+	// Set the buffers
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	context->IASetVertexBuffers(0, 1, &skyVB, &stride, &offset);
+	context->IASetIndexBuffer(skyIB, DXGI_FORMAT_R32_UINT, 0);
+
+	// Set up the sky shaders
+	skyVS->SetMatrix4x4("view", mainCamera->getViewMatrix());
+	skyVS->SetMatrix4x4("projection", mainCamera->getProjMatrix());
+	skyVS->CopyAllBufferData();
+	skyVS->SetShader();
+
+	skyPS->SetShaderResourceView("SkyTexture", skySRV);
+	skyPS->SetSamplerState("BasicSampler", sampler);
+	skyPS->SetShader();
+
+	// Set up the render state options
+	context->RSSetState(skyRasterState);
+	context->OMSetDepthStencilState(skyDepthState, 0);
+
+	//Drawing objects
 
 	player1->PrepareMaterial(viewMatrix, projectionMatrix);
 	player1->Draw(context);
@@ -455,6 +521,11 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
+
+	// Reset any states we've changed for the next frame!
+	context->RSSetState(0);
+	context->OMSetDepthStencilState(0, 0);
+
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
 	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
