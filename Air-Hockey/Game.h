@@ -88,6 +88,7 @@ private:
 	Mesh* cube;
 	Mesh* sphere;
 	Mesh* cylinder;
+	Mesh* hockeyPaddle;
 
 	//Entities
 	GameEntity* entity;

@@ -63,6 +63,7 @@ Game::~Game()
 	delete cube;
 	delete sphere;
 	delete cylinder;
+	delete hockeyPaddle;
 	
 
 	// Delete our simple shader objects, which
@@ -127,8 +128,7 @@ void Game::Init()
 
 	CreateDDSTextureFromFile(
 		device,
-		context,
-		L"Assets/Textures/spaceSkyBox.dds",
+		L"Assets/Textures/SpaceSkyBox.dds",
 		0,
 		&skySRV);
 
@@ -339,11 +339,12 @@ void Game::CreateBasicGeometry()
 	cube = new Mesh("Assets/Models/cube.obj", device);
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
 	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
+	hockeyPaddle = new Mesh("Assets/Models/hockeypaddle.obj", device);
 
 
 	puck = new Puck(cylinder, textureMaterial);
-	player1 = new Paddle(cylinder, textureMaterial);
-	player2 = new Paddle(cylinder, textureMaterial);
+	player1 = new Paddle(hockeyPaddle, textureMaterial);
+	player2 = new Paddle(hockeyPaddle, textureMaterial);
 
 	player1->SetPosition(-2.5f, 0.0f, 0.0f);
 	player2->SetPosition(2.5f, 0.0f, 0.0f);
@@ -481,12 +482,26 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
-	pixelShader->SetShaderResourceView("srv", designTextureSRV); //Same as above
+	pixelShader->SetShaderResourceView("srv", designTextureSRV);
+	
+	//Same as above														 //Drawing objects
+
+	player1->PrepareMaterial(viewMatrix, projectionMatrix);
+	player1->Draw(context);
+
+	player2->PrepareMaterial(viewMatrix, projectionMatrix);
+	player2->Draw(context);
+
+	puck->PrepareMaterial(viewMatrix, projectionMatrix);
+	puck->Draw(context);
+
+	table->PrepareMaterial(viewMatrix, projectionMatrix);
+	table->Draw(context);
 
 	//draw the sky LAST, this should make it so it draws wherever there isn't
 	//already something there and sets the depth to 1.0
-	ID3D11Buffer* skyVB = cylinder->GetVertexBuffer();
-	ID3D11Buffer* skyIB = cylinder->GetIndexBuffer();
+	ID3D11Buffer* skyVB = cube->GetVertexBuffer();
+	ID3D11Buffer* skyIB = cube->GetIndexBuffer();
 
 	// Set the buffers
 	UINT stride = sizeof(Vertex);
@@ -508,19 +523,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->RSSetState(skyRasterState);
 	context->OMSetDepthStencilState(skyDepthState, 0);
 
-	//Drawing objects
-
-	player1->PrepareMaterial(viewMatrix, projectionMatrix);
-	player1->Draw(context);
-
-	player2->PrepareMaterial(viewMatrix, projectionMatrix);
-	player2->Draw(context);
-
-	puck->PrepareMaterial(viewMatrix, projectionMatrix);
-	puck->Draw(context);
-
-	table->PrepareMaterial(viewMatrix, projectionMatrix);
-	table->Draw(context);
+	//Draw sky
+	context->DrawIndexed(cube->GetIndexCount(), 0, 0);
 
 	// Reset any states we've changed for the next frame!
 	context->RSSetState(0);
