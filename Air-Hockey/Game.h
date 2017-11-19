@@ -39,6 +39,7 @@ private:
 	//Bool for Debug Mode (allow/disallow cam movement)
 	bool DebugModeActive;
 	int lastHit;
+	bool paused;
 
 	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadShaders();
@@ -46,6 +47,7 @@ private:
 	void CreateMatrices();
 	void CreateBasicGeometry();
 	void CreateShadowMap();
+	void CreateShadowMapDirectionalOnly();
 
 	// Buffers to hold actual geometry data
 	ID3D11Buffer* triVertBuffer;
@@ -72,9 +74,18 @@ private:
 	ID3D11SamplerState* shadowSampler;
 	ID3D11RasterizerState* shadowRasterizer;
 
+	//Point Light shadow related things start with 'P'
+	ID3D11ShaderResourceView* pShadowMapSRV;
+	ID3D11Texture2D* pShadowCubeTexture; //actual texture that will become the cube map
+	ID3D11Texture2D* pShadowCubeTex[6]; //array of depth buffer textures
+	ID3D11DepthStencilView* pShadowCubeDepthView[6];
+
 	SimpleVertexShader* shadowVS;
 
 	XMFLOAT4X4 shadowViewMatrix, shadowProjMatrix;
+
+	XMFLOAT4X4* pShadowViewMatrix;
+	XMFLOAT4X4 pShadowProjMatrix;
 
 	// The matrices to go from model space to screen space
 	DirectX::XMFLOAT4X4 worldMatrix;
@@ -100,6 +111,10 @@ private:
 	Puck* puck;
 
 	GameEntity* table;
+
+	GameEntity* TEST_ENTITY;
+	ID3D11ShaderResourceView* TEST_TEXTURE;
+	Material* TEST_MATERIAL;
 
 	//Cameras
 	Camera* mainCamera;

@@ -94,15 +94,15 @@ float4 main(VertexToPixel input) : SV_TARGET
 	//Point Light Calculations
 	float3 pLightDir = normalize(pLight.Position - input.worldPos);
 	float pLightDist = length(pLight.Position - input.worldPos);
-	float pLightAmount = saturate(dot(input.normal, pLightDir));
+	float pLightAmount = saturate(dot(input.normal, -pLightDir));
 	float atten = 1.0f / (1.0f + .1 * pow(pLightDist, 2.0f)); //Attenuation, so distance matters
 	pLightAmount = saturate(pLightAmount * atten);
 
 	//Point Light Specular Calculations
 	float3 reflection = reflect(-pLightDir, input.normal);
 	float3 dirToCamera = normalize(cameraPosition - input.worldPos);
-	float pLightSpec = 0;//pow(saturate(dot(reflection, dirToCamera)), 64);
-
+	float pLightSpec = pow(saturate(dot(reflection, dirToCamera)), 64);
+	pLightSpec = saturate(pLightSpec * atten);
 
 	//SHADOW STUFF
 

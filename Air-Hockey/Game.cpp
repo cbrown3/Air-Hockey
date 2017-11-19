@@ -32,6 +32,7 @@ Game::Game(HINSTANCE hInstance)
 	mainCamera = new Camera();
 
 	DebugModeActive = false;
+	paused = false;
 	lastHit = 0;
 
 	mainCamera->SetSpeed(0.001f);
@@ -58,6 +59,7 @@ Game::~Game()
 	sampler->Release();
 
 	delete textureMaterial;
+	delete TEST_MATERIAL;
 
 	//delete meshes
 	delete cube;
@@ -80,12 +82,25 @@ Game::~Game()
 	delete player2;
 	delete puck;
 	delete table;
+	delete TEST_ENTITY;
 
 	//delete shadow related things
 	shadowDepthView->Release();
 	shadowMapSRV->Release();
 	shadowSampler->Release();
 	shadowRasterizer->Release();
+
+	//pShadowMapSRV->Release();
+	//pShadowCubeTexture->Release();
+
+	delete[] pShadowViewMatrix;
+	for (int i = 0; i < 6; i++)
+	{
+		pShadowCubeTex[i]->Release();
+		pShadowCubeDepthView[i]->Release();
+	}
+	
+
 	delete shadowVS;
 
 	//Delete Skybox things
@@ -111,6 +126,8 @@ void Game::Init()
 	CreateMatrices();
 	CreateBasicGeometry();
 
+	pShadowViewMatrix = new XMFLOAT4X4[6];
+
 	//Load the textures
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
@@ -122,7 +139,7 @@ void Game::Init()
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
 		context,	//context
-		L"Assets/Textures/designNormal.jpg",
+		L"Assets/Textures/designNormal.png",
 		0,
 		&designNormMapSRV);
 
@@ -131,6 +148,12 @@ void Game::Init()
 		L"Assets/Textures/SpaceSkyBox.dds",
 		0,
 		&skySRV);
+
+	CreateDDSTextureFromFile(
+		device,
+		L"Assets/Textures/PureWhite.png",
+		0,
+		&TEST_TEXTURE);
 
 	//States for drawing the sky
 
@@ -164,6 +187,11 @@ void Game::Init()
 	shadowTexDesc.SampleDesc.Quality = 0;
 	shadowTexDesc.Usage = D3D11_USAGE_DEFAULT;
 	device->CreateTexture2D(&shadowTexDesc, 0, &shadowMapTex);
+	for (int i = 0; i < 6; i++)
+	{
+		device->CreateTexture2D(&shadowTexDesc, 0, &pShadowCubeTex[i]);
+	}
+	
 
 	//shadow dpeth stencil
 	D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthDesc = {};
@@ -171,6 +199,11 @@ void Game::Init()
 	shadowDepthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	shadowDepthDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
+	for (int i = 0; i < 6; i++)
+	{
+		device->CreateDepthStencilView(pShadowCubeTex[i], &shadowDepthDesc, &pShadowCubeDepthView[i]);
+	}
+
 
 	//shadow resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc = {};
@@ -251,6 +284,7 @@ void Game::LoadShaders()
 
 	/*CREATE MATERIALS*/
 	textureMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
+	TEST_MATERIAL = new Material(vertexShader, pixelShader, TEST_TEXTURE, sampler);
 }
 
 void Game::LoadLights()
@@ -266,8 +300,7 @@ void Game::LoadLights()
 	pointLight.Position = XMFLOAT3(0.0f, -0.1f, 0.0f);
 }
 
-//Makes the Shadow Map (call each frame at the beginning) (Currently works with the directional light)
-void Game::CreateShadowMap()
+void Game::CreateShadowMapDirectionalOnly()
 {
 	context->OMSetRenderTargets(0, 0, shadowDepthView);
 	context->ClearDepthStencilView(shadowDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -313,6 +346,146 @@ void Game::CreateShadowMap()
 	viewport.Width = this->width;
 	viewport.Height = this->height;
 	context->RSSetViewports(1, &viewport);
+
+}
+//Makes the Shadow Map (call each frame at the beginning) (Currently works with the directional light)
+void Game::CreateShadowMap()
+{
+	context->OMSetRenderTargets(0, 0, shadowDepthView);
+	context->ClearDepthStencilView(shadowDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	context->RSSetState(shadowRasterizer);
+
+	//viewport setup
+	D3D11_VIEWPORT viewport = {};
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = (float)shadowMapSize;
+	viewport.Height = (float)shadowMapSize;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &viewport);
+
+	//set shaders
+	shadowVS->SetShader();
+	shadowVS->SetMatrix4x4("view", shadowViewMatrix);
+	shadowVS->SetMatrix4x4("projection", shadowProjMatrix);
+
+	context->PSSetShader(0, 0, 0);
+
+	shadowVS->SetMatrix4x4("world", player1->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	player1->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", player2->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	player2->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	table->Draw(context);
+
+	shadowVS->SetMatrix4x4("world", puck->GetWorldMatrix());
+	shadowVS->CopyAllBufferData();
+	puck->Draw(context);
+
+	/*/setting things back to normal
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->RSSetState(0);
+
+	viewport.Width = this->width;
+	viewport.Height = this->height;
+	context->RSSetViewports(1, &viewport);
+	/*/
+
+	//Point Light Shadows (dear god)
+	XMMATRIX pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 1, 0, 0));
+
+	//pShadowViewMatrix[0] = {};
+
+	XMStoreFloat4x4(&pShadowViewMatrix[0], XMMatrixTranspose(pShadowView1));
+	XMStoreFloat4x4(&pShadowViewMatrix[1], XMMatrixTranspose(pShadowView2));
+	XMStoreFloat4x4(&pShadowViewMatrix[2], XMMatrixTranspose(pShadowView3));
+	XMStoreFloat4x4(&pShadowViewMatrix[3], XMMatrixTranspose(pShadowView4));
+	XMStoreFloat4x4(&pShadowViewMatrix[4], XMMatrixTranspose(pShadowView5));
+	XMStoreFloat4x4(&pShadowViewMatrix[5], XMMatrixTranspose(pShadowView6));
+
+
+	for (int i = 0; i < 6; i++)
+	{
+		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView[i]);
+		context->ClearDepthStencilView(pShadowCubeDepthView[i], D3D11_CLEAR_DEPTH, 1.0f, 0);
+		context->RSSetState(shadowRasterizer);
+
+		context->RSSetViewports(1, &viewport);
+
+		shadowVS->SetShader();
+		shadowVS->SetMatrix4x4("view", pShadowViewMatrix[i]);
+		shadowVS->SetMatrix4x4("projection", pShadowProjMatrix);
+
+		context->PSSetShader(0, 0, 0);
+
+		shadowVS->SetMatrix4x4("world", player1->GetWorldMatrix());
+		shadowVS->CopyAllBufferData();
+		player1->Draw(context);
+
+		shadowVS->SetMatrix4x4("world", player2->GetWorldMatrix());
+		shadowVS->CopyAllBufferData();
+		player2->Draw(context);
+
+		shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
+		shadowVS->CopyAllBufferData();
+		table->Draw(context);
+
+		shadowVS->SetMatrix4x4("world", puck->GetWorldMatrix());
+		shadowVS->CopyAllBufferData();
+		puck->Draw(context);
+	}
+
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->RSSetState(0);
+
+	viewport.Width = this->width;
+	viewport.Height = this->height;
+	context->RSSetViewports(1, &viewport);
+
+	//Made the indivisual shadow maps, now compine them intoa cubemap
+	D3D11_TEXTURE2D_DESC cubeMapDesc = {};
+	cubeMapDesc.Width = shadowMapSize; //* 6;
+	cubeMapDesc.Height = shadowMapSize;
+	cubeMapDesc.MipLevels = 1;
+	cubeMapDesc.ArraySize = 6;
+	cubeMapDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	cubeMapDesc.CPUAccessFlags = 0;
+	cubeMapDesc.SampleDesc.Count = 1;
+	cubeMapDesc.SampleDesc.Quality = 0;
+	cubeMapDesc.Usage = D3D11_USAGE_DEFAULT;
+	cubeMapDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	cubeMapDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC cubeSRVDesc = {};
+	cubeSRVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+	cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	cubeSRVDesc.TextureCube.MipLevels = 1;
+	cubeSRVDesc.TextureCube.MostDetailedMip = 0;
+
+	D3D11_SUBRESOURCE_DATA cubeData[6];
+	for (int i = 0; i < 6; i++)
+	{
+		cubeData[i].pSysMem = pShadowCubeTex[i];
+		cubeData[i].SysMemPitch = shadowMapSize / 8;
+		cubeData[i].SysMemSlicePitch = 0;
+	}
+
+	device->CreateTexture2D(&cubeMapDesc, &cubeData[0], &pShadowCubeTexture);
+	device->CreateShaderResourceView(pShadowCubeTexture, &cubeSRVDesc, &pShadowMapSRV);
+
+
+
 }
 
 // --------------------------------------------------------
@@ -328,6 +501,10 @@ void Game::CreateMatrices()
 	XMMATRIX shadowProj = XMMatrixOrthographicLH(10.0f, 10.0f, 0.1f, 100.0f);
 
 	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
+
+	XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, 0.1f, 50.0f);
+
+	XMStoreFloat4x4(&pShadowProjMatrix, XMMatrixTranspose(pShadowProj));
 }
 
 
@@ -341,13 +518,14 @@ void Game::CreateBasicGeometry()
 	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 	hockeyPaddle = new Mesh("Assets/Models/hockeypaddle.obj", device);
 
+	TEST_ENTITY = new GameEntity(cube, TEST_MATERIAL);
 
 	puck = new Puck(cylinder, textureMaterial);
 	player1 = new Paddle(hockeyPaddle, textureMaterial);
 	player2 = new Paddle(hockeyPaddle, textureMaterial);
 
-	player1->SetPosition(-2.5f, 0.0f, 0.0f);
-	player2->SetPosition(2.5f, 0.0f, 0.0f);
+	player1->SetPosition(-2.5f, -0.225f, 0.0f);
+	player2->SetPosition(2.5f, -0.225f, 0.0f);
 	puck->SetPosition(0.0f, -0.15f, 0.0f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
@@ -387,22 +565,25 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	
 
-	CreateShadowMap();
+	CreateShadowMapDirectionalOnly();
 
-	//Puck Movement and Collision
-	puck->Update(deltaTime);
-	puck->CollisionDetection(player1);
-	puck->CollisionDetection(player2);
-	//Update Point Light Direction
-	pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
+	if (!paused)
+	{
+		//Puck Movement and Collision
+		puck->Update(deltaTime);
+		puck->CollisionDetection(player1);
+		puck->CollisionDetection(player2);
+		//Update Point Light Direction
+		pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
 
-	//Paddle Movement
-	PlayerMovement(deltaTime);
+		//Paddle Movement
+		PlayerMovement(deltaTime);
 
-	//Camera Movement during Debug Mode
-	CameraMovement();
+		//Camera Movement during Debug Mode
+		
 
-	score = puck->checkScore();
+		score = puck->checkScore();
+	}
 
 	//Score
 	if(score == 1)
@@ -426,6 +607,20 @@ void Game::Update(float deltaTime, float totalTime)
 		lastHit = totalTime + 1;
 	}
 
+	if (GetAsyncKeyState(' ') & 0x8000 && (totalTime > lastHit))
+	{
+		if (paused)
+		{
+			paused = false;
+		}
+		else
+		{
+			paused = true;
+		}
+
+		lastHit = totalTime + 1;
+	}
+	CameraMovement();
 	mainCamera->Update();
 
 	// Quit if the escape key is pressed
@@ -497,6 +692,14 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
+
+
+	/*/Test entity drawing
+	pixelShader->SetShaderResourceView("srv", TEST_ENTITY->getMaterial()->getTextureSRV);
+	TEST_ENTITY->PrepareMaterial(viewMatrix, projectionMatrix);
+	TEST_ENTITY->Draw(context);
+	/*/
+
 
 	//draw the sky LAST, this should make it so it draws wherever there isn't
 	//already something there and sets the depth to 1.0
