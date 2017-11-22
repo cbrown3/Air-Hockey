@@ -125,7 +125,8 @@ private:
 	bool middleButtonPressed;
 
 	//Materials
-	Material* textureMaterial;
+	Material* designMaterial;
+	Material* paddleMaterial;
 
 	//Lights
 	DirectionalLight dirLight;
@@ -136,7 +137,7 @@ private:
 	//An SRV is good enough to load textures with DirectX TK and then
 	//using them with shaders
 	ID3D11ShaderResourceView* designTextureSRV;
-	ID3D11ShaderResourceView* woodTextureSRV;
+	ID3D11ShaderResourceView* paddleTextureSRV;
 
 	//Normal Mapping
 	ID3D11ShaderResourceView* designNormMapSRV;

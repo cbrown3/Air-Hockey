@@ -35,7 +35,7 @@ Game::Game(HINSTANCE hInstance)
 	paused = false;
 	lastHit = 0;
 
-	mainCamera->SetSpeed(0.001f);
+	mainCamera->SetSpeed(0.05f);
 
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -55,10 +55,12 @@ Game::~Game()
 {
 	//Clean up 
 	designTextureSRV->Release();
+	paddleTextureSRV->Release();
 	//designNormMapSRV->Release();
 	sampler->Release();
 
-	delete textureMaterial;
+	delete designMaterial;
+	delete paddleMaterial;
 	delete TEST_MATERIAL;
 
 	//delete meshes
@@ -143,9 +145,16 @@ void Game::Init()
 		0,
 		&designNormMapSRV);
 
+	CreateWICTextureFromFile(
+		device,		//The device handles creating new resources (like textures)
+		context,	//context
+		L"Assets/Textures/hockeypaddle.png",
+		0,
+		&paddleTextureSRV);
+
 	CreateDDSTextureFromFile(
 		device,
-		L"Assets/Textures/SpaceSkyBox.dds",
+		L"Assets/Textures/GalaxySkyBox.dds",
 		0,
 		&skySRV);
 
@@ -283,7 +292,8 @@ void Game::LoadShaders()
 	skyPS->LoadShaderFile(L"SkyPS.cso");
 
 	/*CREATE MATERIALS*/
-	textureMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
+	designMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
+	paddleMaterial = new Material(vertexShader, pixelShader, paddleTextureSRV, sampler);
 	TEST_MATERIAL = new Material(vertexShader, pixelShader, TEST_TEXTURE, sampler);
 }
 
@@ -520,9 +530,9 @@ void Game::CreateBasicGeometry()
 
 	TEST_ENTITY = new GameEntity(cube, TEST_MATERIAL);
 
-	puck = new Puck(cylinder, textureMaterial);
-	player1 = new Paddle(hockeyPaddle, textureMaterial);
-	player2 = new Paddle(hockeyPaddle, textureMaterial);
+	puck = new Puck(cylinder, designMaterial);
+	player1 = new Paddle(hockeyPaddle, paddleMaterial);
+	player2 = new Paddle(hockeyPaddle, paddleMaterial);
 
 	player1->SetPosition(-2.5f, -0.225f, 0.0f);
 	player2->SetPosition(2.5f, -0.225f, 0.0f);
@@ -536,12 +546,12 @@ void Game::CreateBasicGeometry()
 	puck->UpdateWorldMatrix();
 
 	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
-	table = new GameEntity(cube, textureMaterial);
+	table = new GameEntity(cube, designMaterial);
 	table->SetPosition(0.0f, -.5f, 0.0f);
 	table->SetScale(8.0f, 0.5f, 4.0f);
 	table->UpdateWorldMatrix();
 	//
-	puck = new Puck(cylinder, textureMaterial);
+	puck = new Puck(cylinder, designMaterial);
 	puck->SetScale(0.5f, 0.1f, 0.5f);
 	puck->SetPosition(0.0f, -.2f, 0.0f);
 	puck->UpdateWorldMatrix();
@@ -662,9 +672,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		&pointLight,
 		sizeof(PointLight));
 
-	//Sending Normal Map to Pixel Shader
-	pixelShader->SetShaderResourceView("NormalMap", designNormMapSRV);
-
 	vertexShader->SetMatrix4x4("shadowViewMat", shadowViewMatrix);
 	vertexShader->SetMatrix4x4("shadowProjMat", shadowProjMatrix);
 
@@ -677,7 +684,9 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
-	pixelShader->SetShaderResourceView("srv", designTextureSRV);
+	pixelShader->SetShaderResourceView("srv", paddleTextureSRV);
+
+	pixelShader->SetShaderResourceView("NormalMap", TEST_TEXTURE);
 	
 	//Same as above														 //Drawing objects
 
@@ -686,6 +695,11 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	player2->PrepareMaterial(viewMatrix, projectionMatrix);
 	player2->Draw(context);
+
+	//Sending Normal Map to Pixel Shader
+	pixelShader->SetShaderResourceView("NormalMap", designNormMapSRV);
+
+	pixelShader->SetShaderResourceView("srv", designTextureSRV);
 
 	puck->PrepareMaterial(viewMatrix, projectionMatrix);
 	puck->Draw(context);
