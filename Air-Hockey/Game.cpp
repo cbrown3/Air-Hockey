@@ -68,6 +68,7 @@ Game::~Game()
 	delete sphere;
 	delete cylinder;
 	delete hockeyPaddle;
+	delete hockeyTable;
 	
 
 	// Delete our simple shader objects, which
@@ -134,14 +135,14 @@ void Game::Init()
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
 		context,	//context
-		L"Assets/Textures/design.jpg",
+		L"Assets/Textures/airhockey.jpg",
 		0,
 		&designTextureSRV);
 
 	CreateWICTextureFromFile(
 		device,		//The device handles creating new resources (like textures)
 		context,	//context
-		L"Assets/Textures/designNormal.png",
+		L"Assets/Textures/PureWhite.png",
 		0,
 		&designNormMapSRV);
 
@@ -160,7 +161,7 @@ void Game::Init()
 
 	CreateDDSTextureFromFile(
 		device,
-		L"Assets/Textures/PureWhite.png",
+		L"Assets/Textures/paddleNormal.png",
 		0,
 		&TEST_TEXTURE);
 
@@ -527,34 +528,29 @@ void Game::CreateBasicGeometry()
 	sphere = new Mesh("Assets/Models/sphere.obj", device);
 	cylinder = new Mesh("Assets/Models/cylinder.obj", device);
 	hockeyPaddle = new Mesh("Assets/Models/hockeypaddle.obj", device);
+	hockeyTable = new Mesh("Assets/Models/hockeytable.obj", device);
 
 	TEST_ENTITY = new GameEntity(cube, TEST_MATERIAL);
 
 	puck = new Puck(cylinder, designMaterial);
 	player1 = new Paddle(hockeyPaddle, paddleMaterial);
 	player2 = new Paddle(hockeyPaddle, paddleMaterial);
+	table = new GameEntity(cube, designMaterial);
 
 	player1->SetPosition(-2.5f, -0.225f, 0.0f);
 	player2->SetPosition(2.5f, -0.225f, 0.0f);
-	puck->SetPosition(0.0f, -0.15f, 0.0f);
+	puck->SetPosition(0.0f, -.2f, 0.0f);
+	table->SetPosition(0.0f, -.5f, 0.0f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
-	puck->SetScale(0.45f, 0.15f, 0.45f);
+	puck->SetScale(0.5f, 0.1f, 0.5f);
+	table->SetScale(8.0f, 0.5f, 4.5f);
 
 	player1->UpdateWorldMatrix();
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
-
-	//if the cube is 1x1x1 then the x border will be 4 to -4 and the z border will be -2 to 2
-	table = new GameEntity(cube, designMaterial);
-	table->SetPosition(0.0f, -.5f, 0.0f);
-	table->SetScale(8.0f, 0.5f, 4.0f);
 	table->UpdateWorldMatrix();
-	//
-	puck = new Puck(cylinder, designMaterial);
-	puck->SetScale(0.5f, 0.1f, 0.5f);
-	puck->SetPosition(0.0f, -.2f, 0.0f);
-	puck->UpdateWorldMatrix();
+
 }
 
 

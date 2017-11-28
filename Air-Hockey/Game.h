@@ -100,6 +100,7 @@ private:
 	Mesh* sphere;
 	Mesh* cylinder;
 	Mesh* hockeyPaddle;
+	Mesh* hockeyTable;
 
 	//Entities
 	GameEntity* entity;
