@@ -209,6 +209,9 @@ int Mesh::GetIndexCount()
 
 void Mesh::BufferCreation(Vertex * a_vertices, int a_numOfVert, UINT * a_indices, int a_numOfInd, ID3D11Device * a_device)
 {
+	// Make sure we have tangents for normal mapping
+	CalculateTangents(a_vertices, a_numOfVert, a_indices, a_numOfInd);
+
 	numOfIndices = a_numOfInd;
 
 	// Create the VERTEX BUFFER description -----------------------------------
@@ -252,4 +255,76 @@ void Mesh::BufferCreation(Vertex * a_vertices, int a_numOfVert, UINT * a_indices
 	// Actually create the buffer with the initial data
 	// - Once we do this, we'll NEVER CHANGE THE BUFFER AGAIN
 	a_device->CreateBuffer(&ibd, &initialIndexData, &indexBuffer);
+}
+
+void Mesh::CalculateTangents(Vertex * a_vertices, int a_numOfVert, UINT * a_indices, int a_numOfInd)
+{
+	// Reset tangents
+	for (int i = 0; i < a_numOfVert; i++)
+	{
+		a_vertices[i].Tangent = XMFLOAT3(0, 0, 0);
+	}
+
+	// Calculate tangents one whole triangle at a time
+	for (int i = 0; i < a_numOfVert;)
+	{
+		// Grab indices and vertices of first triangle
+		unsigned int i1 = a_indices[i++];
+		unsigned int i2 = a_indices[i++];
+		unsigned int i3 = a_indices[i++];
+		Vertex* v1 = &a_vertices[i1];
+		Vertex* v2 = &a_vertices[i2];
+		Vertex* v3 = &a_vertices[i3];
+
+		// Calculate vectors relative to triangle positions
+		float x1 = v2->Position.x - v1->Position.x;
+		float y1 = v2->Position.y - v1->Position.y;
+		float z1 = v2->Position.z - v1->Position.z;
+
+		float x2 = v3->Position.x - v1->Position.x;
+		float y2 = v3->Position.y - v1->Position.y;
+		float z2 = v3->Position.z - v1->Position.z;
+
+		// Do the same for vectors relative to triangle uv's
+		float s1 = v2->UV.x - v1->UV.x;
+		float t1 = v2->UV.y - v1->UV.y;
+
+		float s2 = v3->UV.x - v1->UV.x;
+		float t2 = v3->UV.y - v1->UV.y;
+
+		// Create vectors for tangent calculation
+		float r = 1.0f / (s1 * t2 - s2 * t1);
+
+		float tx = (t2 * x1 - t1 * x2) * r;
+		float ty = (t2 * y1 - t1 * y2) * r;
+		float tz = (t2 * z1 - t1 * z2) * r;
+
+		// Adjust tangents of each vert of the triangle
+		v1->Tangent.x += tx;
+		v1->Tangent.y += ty;
+		v1->Tangent.z += tz;
+
+		v2->Tangent.x += tx;
+		v2->Tangent.y += ty;
+		v2->Tangent.z += tz;
+
+		v3->Tangent.x += tx;
+		v3->Tangent.y += ty;
+		v3->Tangent.z += tz;
+	}
+
+	// Ensure all of the tangents are orthogonal to the normals
+	for (int i = 0; i < a_numOfVert; i++)
+	{
+		// Grab the two vectors
+		XMVECTOR normal = XMLoadFloat3(&a_vertices[i].Normal);
+		XMVECTOR tangent = XMLoadFloat3(&a_vertices[i].Tangent);
+
+		// Use Gram-Schmidt orthogonalize
+		tangent = XMVector3Normalize(
+			tangent - normal * XMVector3Dot(normal, tangent));
+
+		// Store the tangent
+		XMStoreFloat3(&a_vertices[i].Tangent, tangent);
+	}
 }

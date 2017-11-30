@@ -11,8 +11,8 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 position		: SV_POSITION;
-	float3 normal		: NORMAL;       // Normal
 	float2 uv           : TEXCOORD;     // UV
+	float3 normal		: NORMAL;       // Normal
 	float3 tangent		: TANGENT;
 	float3 worldPos		: POSITION;
 	float4 shadowMapPosition	:	POSITION1;

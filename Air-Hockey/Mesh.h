@@ -18,6 +18,7 @@ public:
 	ID3D11Buffer* GetIndexBuffer();
 	int GetIndexCount();
 	void BufferCreation(Vertex * a_vertices, int a_numOfVert, UINT * a_indices, int a_numOfInd, ID3D11Device * a_device);
+	void CalculateTangents(Vertex* a_vertices, int a_numOfVert, UINT* a_indices, int a_numOfInd);
 
 private:
 	ID3D11Buffer* vertexBuffer;
