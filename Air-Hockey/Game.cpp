@@ -68,7 +68,7 @@ Game::~Game()
 	delete sphere;
 	delete cylinder;
 	delete hockeyPaddle;
-	delete hockeyTable;
+	//delete hockeyTable;
 	
 
 	// Delete our simple shader objects, which
@@ -426,6 +426,8 @@ void Game::CreateShadowMap()
 	XMStoreFloat4x4(&pShadowViewMatrix[5], XMMatrixTranspose(pShadowView6));
 
 
+	
+
 	for (int i = 0; i < 6; i++)
 	{
 		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView[i]);
@@ -484,18 +486,32 @@ void Game::CreateShadowMap()
 	cubeSRVDesc.TextureCube.MipLevels = 1;
 	cubeSRVDesc.TextureCube.MostDetailedMip = 0;
 
-	D3D11_SUBRESOURCE_DATA cubeData[6];
+	
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC tempDesc = {};
+	tempDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	tempDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	tempDesc.Texture2D.MipLevels = 1;
+	tempDesc.Texture2D.MostDetailedMip = 0;
+
+	
+	device->CreateTexture2D(&cubeMapDesc, 0, &pShadowCubeTexture);
+
 	for (int i = 0; i < 6; i++)
 	{
-		cubeData[i].pSysMem = pShadowCubeTex[i];
-		cubeData[i].SysMemPitch = shadowMapSize / 8;
-		cubeData[i].SysMemSlicePitch = 0;
+		pShadowCubeTexture[i] = *pShadowCubeTex[i];
 	}
 
-	device->CreateTexture2D(&cubeMapDesc, &cubeData[0], &pShadowCubeTexture);
 	device->CreateShaderResourceView(pShadowCubeTexture, &cubeSRVDesc, &pShadowMapSRV);
+	//for (int i = 0; i < 6; i++)
+	//{
+	//	cubeData[i].pSysMem = pShadowCubeTex[i];
+	//	cubeData[i].SysMemPitch = shadowMapSize / 8;
+	//	cubeData[i].SysMemSlicePitch = 0;
+	//}
 
-
+	//device->CreateTexture2D(&cubeMapDesc, &cubeData[0], &pShadowCubeTexture);
+	
 
 }
 
@@ -571,7 +587,8 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	
 
-	CreateShadowMapDirectionalOnly();
+	//CreateShadowMapDirectionalOnly();
+	CreateShadowMap();
 
 	if (!paused)
 	{

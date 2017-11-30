@@ -75,6 +75,7 @@ private:
 	ID3D11RasterizerState* shadowRasterizer;
 
 	//Point Light shadow related things start with 'P'
+	ID3D11ShaderResourceView* tempSRV[6];
 	ID3D11ShaderResourceView* pShadowMapSRV;
 	ID3D11Texture2D* pShadowCubeTexture; //actual texture that will become the cube map
 	ID3D11Texture2D* pShadowCubeTex[6]; //array of depth buffer textures
