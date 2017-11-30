@@ -113,6 +113,7 @@ private:
 	Puck* puck;
 
 	GameEntity* table;
+	GameEntity* tableBorder;
 
 	GameEntity* TEST_ENTITY;
 	ID3D11ShaderResourceView* TEST_TEXTURE;

@@ -68,7 +68,7 @@ Game::~Game()
 	delete sphere;
 	delete cylinder;
 	delete hockeyPaddle;
-	//delete hockeyTable;
+	delete hockeyTable;
 	
 
 	// Delete our simple shader objects, which
@@ -85,6 +85,7 @@ Game::~Game()
 	delete player2;
 	delete puck;
 	delete table;
+	delete tableBorder;
 	delete TEST_ENTITY;
 
 	//delete shadow related things
@@ -552,20 +553,24 @@ void Game::CreateBasicGeometry()
 	player1 = new Paddle(hockeyPaddle, paddleMaterial);
 	player2 = new Paddle(hockeyPaddle, paddleMaterial);
 	table = new GameEntity(cube, designMaterial);
+	tableBorder = new GameEntity(hockeyTable, TEST_MATERIAL);
 
 	player1->SetPosition(-2.5f, -0.225f, 0.0f);
 	player2->SetPosition(2.5f, -0.225f, 0.0f);
 	puck->SetPosition(0.0f, -.2f, 0.0f);
 	table->SetPosition(0.0f, -.5f, 0.0f);
+	tableBorder->SetPosition(1.5f, -2.25f, 11.232f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
 	puck->SetScale(0.5f, 0.1f, 0.5f);
 	table->SetScale(8.0f, 0.5f, 4.5f);
+	tableBorder->SetScale(0.0325f, 0.03f, 0.03f);
 
 	player1->UpdateWorldMatrix();
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
 	table->UpdateWorldMatrix();
+	tableBorder->UpdateWorldMatrix();
 
 }
 
@@ -585,10 +590,7 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
-	
-
-	//CreateShadowMapDirectionalOnly();
-	CreateShadowMap();
+	CreateShadowMapDirectionalOnly();
 
 	if (!paused)
 	{
@@ -597,7 +599,7 @@ void Game::Update(float deltaTime, float totalTime)
 		puck->CollisionDetection(player1);
 		puck->CollisionDetection(player2);
 		//Update Point Light Direction
-		pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
+		pointLight.Position = XMFLOAT3(puck->GetPosition().x - 1.0f, -1.0f, puck->GetPosition().z + 1.0f);
 
 		//Paddle Movement
 		PlayerMovement(deltaTime);
@@ -720,6 +722,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
 
+	tableBorder->PrepareMaterial(viewMatrix, projectionMatrix);
+	tableBorder->Draw(context);
 
 	/*/Test entity drawing
 	pixelShader->SetShaderResourceView("srv", TEST_ENTITY->getMaterial()->getTextureSRV);
