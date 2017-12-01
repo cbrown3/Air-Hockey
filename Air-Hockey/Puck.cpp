@@ -60,7 +60,7 @@ void Puck::CollisionDetection(Paddle* a_paddle)
 
 	XMStoreFloat(&dist, length);
 
-	float radii = (GetScale().x + a_paddle->GetScale().x)*0.5f;
+	float radii = (GetScale().x + a_paddle->GetScale().x)*0.55f;
 
 	//if<radius1+radius2 they collide
 	if (radii > dist)

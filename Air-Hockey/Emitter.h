@@ -27,13 +27,30 @@ class Emitter
 {
 public:
 	Emitter();
-	Emitter(Material* a_mat,
+	Emitter(DirectX::XMFLOAT3 pos,
+		DirectX::XMFLOAT3 vel,
+		DirectX::XMFLOAT3 acc,
+		DirectX::XMFLOAT4 startColor,
+		DirectX::XMFLOAT4 endColor,
+		float startSize,
+		float endSize,
+		int maxParticles,
+		int emissionRate,
+		bool loopable,
+		bool active,
+		float lifetime,
+		ID3D11Device* device,
+		SimpleVertexShader* vs,
+		SimplePixelShader* ps,
+		ID3D11ShaderResourceView* texture);
+	Emitter(Material * a_mat,
 		DirectX::XMFLOAT3 pos,
 		DirectX::XMFLOAT3 vel,
 		int maxParticles,
 		int emissionRate,
 		bool loopable,
-		bool active);
+		bool active, 
+		ID3D11Device * device);
 	~Emitter();
 
 	void Activate();
@@ -50,19 +67,24 @@ public:
 
 private:
 	//cyclical buffer stuff
-	std::vector<Particle>* particles;
+	Particle* particles;
 	int max;
 	int firstDeadIndex;
 	int firstAliveIndex;
 	bool loop;
 	bool active;
+	float lifetime;
+	int livingParticleCount;
 
 	//drawing stuff
-	std::vector<ParticleVertex>* particleVertices;
+	ParticleVertex* particleVertices;
 	Material* mat;//make new mat with texture, ps, vs. if using more textures need new materials or to separate out the components in this class
 	ID3D11Buffer* vertexBuffer;
 	ID3D11Buffer* indexBuffer;
 	ID3D11ShaderResourceView* texture;
+	SimpleVertexShader* vs;
+	SimplePixelShader* ps;
+
 
 	//age dependent variables
 	DirectX::XMFLOAT4 startColor;
@@ -78,7 +100,7 @@ private:
 	//rate stuff
 	int particlesPerSecond;
 	float secondsPerParticle;
-	int floatTimeSinceEmit;
+	float timeSinceEmit;
 
 
 };
