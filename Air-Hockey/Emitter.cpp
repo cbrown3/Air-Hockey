@@ -32,6 +32,7 @@ Emitter::Emitter(DirectX::XMFLOAT3 pos,
 	this->endSize = endSize;
 	max = maxParticles;
 	particlesPerSecond = emissionRate;
+	secondsPerParticle = 1.0f/particlesPerSecond;
 	loop = loopable;
 	this->active = active;
 	this->lifetime = lifetime;
@@ -41,6 +42,7 @@ Emitter::Emitter(DirectX::XMFLOAT3 pos,
 
 	firstAliveIndex = 0;
 	firstDeadIndex = 0;
+	timeSinceEmit = 0;
 	livingParticleCount = 0;
 	//initialize arrays
 	particles = new Particle[max];
@@ -115,36 +117,38 @@ void Emitter::Deactivate()
 
 void Emitter::Update(float dt)
 {
-	if (firstAliveIndex < firstDeadIndex)
-	{
-		// First alive is BEFORE first dead, so the "living" particles are contiguous
-		// 
-		// 0 -------- FIRST ALIVE ----------- FIRST DEAD -------- MAX
-		// |    dead    |            alive       |         dead    |
+	if (active) {
+		if (firstAliveIndex < firstDeadIndex)
+		{
+			// First alive is BEFORE first dead, so the "living" particles are contiguous
+			// 
+			// 0 -------- FIRST ALIVE ----------- FIRST DEAD -------- MAX
+			// |    dead    |            alive       |         dead    |
 
-		// First alive is before first dead, so no wrapping
-		for (int i = firstAliveIndex; i < firstDeadIndex; i++)
-			UpdateSingleParticle(dt, i);
-	}
-	else {
-		// First alive is AFTER first dead, so the "living" particles wrap around
-		// 
-		// 0 -------- FIRST DEAD ----------- FIRST ALIVE -------- MAX
-		// |    alive    |            dead       |         alive   |
+			// First alive is before first dead, so no wrapping
+			for (int i = firstAliveIndex; i < firstDeadIndex; i++)
+				UpdateSingleParticle(dt, i);
+		}
+		else {
+			// First alive is AFTER first dead, so the "living" particles wrap around
+			// 
+			// 0 -------- FIRST DEAD ----------- FIRST ALIVE -------- MAX
+			// |    alive    |            dead       |         alive   |
 
-		// Update first half (from firstAlive to max particles)
-		for (int i = firstAliveIndex; i < max; i++)
-			UpdateSingleParticle(dt, i);
+			// Update first half (from firstAlive to max particles)
+			for (int i = firstAliveIndex; i < max; i++)
+				UpdateSingleParticle(dt, i);
 
-		// Update second half (from 0 to first dead)
-		for (int i = 0; i < firstDeadIndex; i++)
-			UpdateSingleParticle(dt, i);
-	}
+			// Update second half (from 0 to first dead)
+			for (int i = 0; i < firstDeadIndex; i++)
+				UpdateSingleParticle(dt, i);
+		}
 
-	timeSinceEmit += dt;
-	while (timeSinceEmit > secondsPerParticle) {
-		SpawnParticle();
-		timeSinceEmit -= secondsPerParticle;
+		timeSinceEmit += dt;
+		while (timeSinceEmit > secondsPerParticle) { 
+			SpawnParticle();
+			timeSinceEmit -= secondsPerParticle;
+		}
 	}
 }
 
@@ -175,7 +179,7 @@ void Emitter::UpdateSingleParticle(float dt, int index)
 
 	//position
 	XMVECTOR startPos = XMLoadFloat3(&position);
-	XMVECTOR startVel = XMLoadFloat3(&velocity);
+	XMVECTOR startVel = XMLoadFloat3(&particles[index].StartVel);
 	XMVECTOR accel = XMLoadFloat3(&acceleration);
 	float t = particles[index].Age;
 
@@ -189,6 +193,7 @@ void Emitter::SpawnParticle()
 {
 	if (livingParticleCount == max)
 		return;
+
 	particles[firstDeadIndex].Age = 0;
 	particles[firstDeadIndex].Size = startSize;
 	particles[firstDeadIndex].Color = startColor;
@@ -247,27 +252,34 @@ void Emitter::CopyOneParticle(int index)
 
 void Emitter::Draw(ID3D11DeviceContext * context, Camera * camera)
 {
-	CopyParticlesToGPU(context);
+	//if (active) {
+		CopyParticlesToGPU(context);
 
-	//set up buffers
-	UINT stride = sizeof(ParticleVertex);
-	UINT offset = 0;
-	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+		//set up buffers
+		UINT stride = sizeof(ParticleVertex);
+		UINT offset = 0;
+		context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	vs->SetMatrix4x4("view", camera->getViewMatrix());
-	vs->SetMatrix4x4("projection", camera->getProjMatrix());
-	vs->SetShader();
-	vs->CopyAllBufferData();
+		vs->SetMatrix4x4("view", camera->getViewMatrix());
+		vs->SetMatrix4x4("projection", camera->getProjMatrix());
+		vs->SetShader();
+		vs->CopyAllBufferData();
 
-	if (firstAliveIndex < firstDeadIndex)
-	{
-		context->DrawIndexed(livingParticleCount * 6, firstAliveIndex * 6, 0);
-	}
-	else
-	{
-		context->DrawIndexed(firstDeadIndex * 6, 0, 0);
+		ps->SetShaderResourceView("particle", texture);
+		ps->SetShader();
+		ps->CopyAllBufferData();
 
-		context->DrawIndexed((max - firstAliveIndex) * 6, firstAliveIndex * 6, 0);
-	}
+
+		if (firstAliveIndex < firstDeadIndex)
+		{
+			context->DrawIndexed(livingParticleCount * 6, firstAliveIndex * 6, 0);
+		}
+		else
+		{
+			context->DrawIndexed(firstDeadIndex * 6, 0, 0);
+
+			context->DrawIndexed((max - firstAliveIndex) * 6, firstAliveIndex * 6, 0);
+		}
+	//}
 }
