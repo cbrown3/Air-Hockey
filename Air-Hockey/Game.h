@@ -78,10 +78,8 @@ private:
 	//Point Light shadow related things start with 'P'
 	ID3D11ShaderResourceView* tempSRV[6];
 	ID3D11ShaderResourceView* pShadowMapSRV;
-	ID3D11Texture2D* pShadowCubeTex; //array of depth buffer textures
-	ID3D11Texture2D* pRTVtex;
-	ID3D11DepthStencilView* pShadowCubeDepthView;
-	ID3D11RenderTargetView* pCubeRTV[6];
+	ID3D11Texture2D* pShadowCubeTex; 
+	ID3D11DepthStencilView* pShadowCubeDepthView[6]; //array of depth buffer textures
 
 	SimpleVertexShader* shadowVS;
 

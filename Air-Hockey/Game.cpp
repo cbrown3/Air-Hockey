@@ -99,7 +99,11 @@ Game::~Game()
 
 	delete[] pShadowViewMatrix;
 	
-	pShadowCubeDepthView->Release();
+	for(int i = 0; i < 6; i++)
+	{
+		//pShadowCubeDepthView[i]->Release();
+	}
+	
 
 	pShadowCubeTex->Release();
 	
@@ -225,21 +229,7 @@ void Game::Init()
 	shadowTexDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
 	device->CreateTexture2D(&shadowTexDesc, 0, &pShadowCubeTex);
-	
-	D3D11_TEXTURE2D_DESC RTVTexDesc = {};
-	RTVTexDesc.Width = shadowMapSize;
-	RTVTexDesc.Height = shadowMapSize;
-	RTVTexDesc.ArraySize = 6;
-	RTVTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	RTVTexDesc.CPUAccessFlags = 0;
-	RTVTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	RTVTexDesc.MipLevels = 1;
-	RTVTexDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
-	RTVTexDesc.SampleDesc.Count = 1;
-	RTVTexDesc.SampleDesc.Quality = 0;
-	RTVTexDesc.Usage = D3D11_USAGE_DEFAULT;
 
-	device->CreateTexture2D(&RTVTexDesc, 0, &pRTVtex);
 
 	//shadow dpeth stencil
 	D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthDesc = {};
@@ -248,8 +238,26 @@ void Game::Init()
 	shadowDepthDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
 
-	device->CreateDepthStencilView(pShadowCubeTex, &shadowDepthDesc, &pShadowCubeDepthView);
-	
+	//device->CreateDepthStencilView(pShadowCubeTex, &shadowDepthDesc, &pShadowCubeDepthView);
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC CubeDepthDesc = {};
+	CubeDepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	CubeDepthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+	CubeDepthDesc.Texture2DArray.MipSlice = 0;
+	CubeDepthDesc.Texture2DArray.ArraySize = 1;
+	for (int i = 0; i < 6; i++)
+	{
+		CubeDepthDesc.Texture2DArray.FirstArraySlice = i;
+		device->CreateDepthStencilView(pShadowCubeTex, &CubeDepthDesc, &pShadowCubeDepthView[i]);
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC cubeSRVDesc = {};
+	cubeSRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	cubeSRVDesc.Texture2DArray.MipLevels = 1;
+	cubeSRVDesc.Texture2DArray.MostDetailedMip = 0;
+	cubeSRVDesc.Texture2DArray.ArraySize = 6;
+	device->CreateShaderResourceView(shadowMapTex, &cubeSRVDesc, &shadowMapSRV);
 
 	//shadow resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc = {};
@@ -259,17 +267,6 @@ void Game::Init()
 	shadowSRVDesc.Texture2D.MostDetailedMip = 0;
 	device->CreateShaderResourceView(shadowMapTex, &shadowSRVDesc, &shadowMapSRV);
 
-	//Render Target for cube map
-	D3D11_RENDER_TARGET_VIEW_DESC RTVdesc = {};
-	RTVdesc.Format = RTVTexDesc.Format;
-	RTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-	RTVdesc.Texture2DArray.ArraySize = 1;
-	RTVdesc.Texture2DArray.MipSlice = 0;
-	for (int i = 0; i < 6; i++)
-	{
-		RTVdesc.Texture2DArray.FirstArraySlice = i;
-		device->CreateRenderTargetView(pRTVtex, &RTVdesc, &pCubeRTV[i]);
-	}
 
 	//shadow sampler state
 	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
@@ -536,15 +533,15 @@ void Game::CreateShadowMap()
 	XMStoreFloat4x4(&pShadowViewMatrix[5], XMMatrixTranspose(pShadowView6));
 
 
-	
-
+	context->RSSetViewports(1, &viewport);
+	float defaultColor[4] = { 1,1,1,1 };
 	for (int i = 0; i < 6; i++)
 	{
-		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView);
-		context->ClearDepthStencilView(pShadowCubeDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView[i]);
+		context->ClearDepthStencilView(pShadowCubeDepthView[i], D3D11_CLEAR_DEPTH, 1.0f, 0);
+		//context->ClearRenderTargetView(pCubeRTV[i], defaultColor);
 		context->RSSetState(shadowRasterizer);
-
-		context->RSSetViewports(1, &viewport);
+		
 
 		shadowVS->SetShader();
 		shadowVS->SetMatrix4x4("view", pShadowViewMatrix[i]);
@@ -773,6 +770,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	pixelShader->SetSamplerState("ShadowSampler", shadowSampler);
 	pixelShader->SetShaderResourceView("ShadowMap", shadowMapSRV);
+	pixelShader->SetShaderResourceView("ShadowCubeMap", shadowCubeMapSRV);
 
 	pixelShader->SetFloat3("cameraPosition", mainCamera->getPositon()); //sending cam position for specular
 	
