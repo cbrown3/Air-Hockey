@@ -94,22 +94,22 @@ void Puck::Update(float dt)
 	if (GetPosition().x > 4.0f)
 	{
 		setDirection(-direction.x, 0.0f, direction.z);
-		SetPosition(4.0f, -0.15f, GetPosition().z);
+		SetPosition(4.0f, -.19f, GetPosition().z);
 	}
 	if (GetPosition().x < -4.0f)
 	{
 		setDirection(-direction.x, 0.0f, direction.z);
-		SetPosition(-4.0f, -0.15f, GetPosition().z);
+		SetPosition(-4.0f, -.19f, GetPosition().z);
 	}
 	if (GetPosition().z > 2.0f)
 	{
 		setDirection(direction.x, 0.0f, -direction.z);
-		SetPosition(GetPosition().x, -0.15f, 2.0f);
+		SetPosition(GetPosition().x, -.19f, 2.0f);
 	}
 	if (GetPosition().z < -2.0f)
 	{
 		setDirection(direction.x, 0.0f, -direction.z);
-		SetPosition(GetPosition().x, -0.15f, -2.0f);
+		SetPosition(GetPosition().x, -.19f, -2.0f);
 	}
 	
 	XMVECTOR puckDir = XMLoadFloat3(&direction);
@@ -125,7 +125,7 @@ void Puck::Update(float dt)
 	XMStoreFloat3(&entityPos, puckPos);
 	XMStoreFloat3(&velocity, puckVel);
 	XMStoreFloat3(&direction, puckDir);
-	entityPos.y = -0.15f;
+	entityPos.y = -.19;
 	std::cout << direction.x << ", " << direction.y << ", " << direction.z << std::endl;
 }
 

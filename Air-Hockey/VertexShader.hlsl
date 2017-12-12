@@ -13,6 +13,13 @@ cbuffer externalData : register(b0)
 	
 	matrix shadowViewMat;
 	matrix shadowProjMat;
+	matrix CubeShadowProjMat;
+	matrix CubeShadowViewMat1;
+	matrix CubeShadowViewMat2;
+	matrix CubeShadowViewMat3;
+	matrix CubeShadowViewMat4;
+	matrix CubeShadowViewMat5;
+	matrix CubeShadowViewMat6;
 };
 
 // Struct representing a single vertex worth of data
@@ -51,6 +58,7 @@ struct VertexToPixel
 	float3 tangent		: TANGENT;
 	float3 worldPos		: POSITION;
 	float4 shadowMapPosition : POSITION1;
+	float4 CubeShadowMapPosition : POSITION2;
 };
 
 // --------------------------------------------------------
@@ -72,9 +80,25 @@ VertexToPixel main( VertexShaderInput input )
 	//shadow positions for output
 	matrix shadowWVP = mul(mul(world, shadowViewMat), shadowProjMat);
 	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+
+	matrix CShadowWVP1 = mul(mul(world, CubeShadowViewMat1), shadowProjMat);
+	matrix CShadowWVP2 = mul(mul(world, CubeShadowViewMat2), shadowProjMat);
+	matrix CShadowWVP3 = mul(mul(world, CubeShadowViewMat3), shadowProjMat);
+	matrix CShadowWVP4 = mul(mul(world, CubeShadowViewMat4), shadowProjMat);
+	matrix CShadowWVP5 = mul(mul(world, CubeShadowViewMat5), shadowProjMat);
+	matrix CShadowWVP6 = mul(mul(world, CubeShadowViewMat6), shadowProjMat);
 	
-	
-	
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
+
+
+
+
+
 	output.normal = mul(input.normal, (float3x3)world);
 	output.normal = normalize(output.normal); // Make sure it's length is 1
 

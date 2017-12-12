@@ -251,13 +251,18 @@ void Game::Init()
 		device->CreateDepthStencilView(pShadowCubeTex, &CubeDepthDesc, &pShadowCubeDepthView[i]);
 	}
 
+	//not sure if I want a TextureCube or 2DArray. Both seem to work the same
 	D3D11_SHADER_RESOURCE_VIEW_DESC cubeSRVDesc = {};
 	cubeSRVDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	cubeSRVDesc.Texture2DArray.MipLevels = 1;
-	cubeSRVDesc.Texture2DArray.MostDetailedMip = 0;
-	cubeSRVDesc.Texture2DArray.ArraySize = 6;
-	device->CreateShaderResourceView(shadowMapTex, &cubeSRVDesc, &shadowMapSRV);
+	cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	//cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	cubeSRVDesc.TextureCube.MostDetailedMip = 0;
+	cubeSRVDesc.TextureCube.MipLevels = 1;
+	//cubeSRVDesc.Texture2DArray.MostDetailedMip = 0;
+	//cubeSRVDesc.Texture2DArray.MipLevels = 1;
+	//cubeSRVDesc.Texture2DArray.ArraySize = 6;
+	//cubeSRVDesc.Texture2DArray.FirstArraySlice = 1;
+	device->CreateShaderResourceView(pShadowCubeTex, &cubeSRVDesc, &pShadowMapSRV);
 
 	//shadow resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc = {};
@@ -516,12 +521,12 @@ void Game::CreateShadowMap()
 	/*/
 
 	//Point Light Shadows (dear god)
-	XMMATRIX pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0)); // height (last param) might need to be 0 0 1
-	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 1, 0, 0));// height (last param) might need to be 0 0 -1
-	XMMATRIX pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x + 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
+	XMMATRIX pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x - 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
+	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y + 1, pointLight.Position.z, 1), XMVectorSet(0, 0, 1, 1)); // height (last param) might need to be 0 0 1
+	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y - 1, pointLight.Position.z, 1), XMVectorSet(0, 0, -1, 1));// height (last param) might need to be 0 0 -1
+	XMMATRIX pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z + 1, 1), XMVectorSet(0, 1, 0, 1));
+	XMMATRIX pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z - 1, 1), XMVectorSet(0, 1, 0, 1));
 
 	//pShadowViewMatrix[0] = {};
 
@@ -534,12 +539,10 @@ void Game::CreateShadowMap()
 
 
 	context->RSSetViewports(1, &viewport);
-	float defaultColor[4] = { 1,1,1,1 };
 	for (int i = 0; i < 6; i++)
 	{
 		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView[i]);
 		context->ClearDepthStencilView(pShadowCubeDepthView[i], D3D11_CLEAR_DEPTH, 1.0f, 0);
-		//context->ClearRenderTargetView(pCubeRTV[i], defaultColor);
 		context->RSSetState(shadowRasterizer);
 		
 
@@ -603,7 +606,8 @@ void Game::CreateMatrices()
 
 	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
 
-	XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, 0.1f, 50.0f);
+	//XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(0.78539816339f, 1.0f, .01f, 50.0f);
+	XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, .01f, 5.0f);
 
 	XMStoreFloat4x4(&pShadowProjMatrix, XMMatrixTranspose(pShadowProj));
 }
@@ -638,13 +642,14 @@ void Game::CreateBasicGeometry()
 	puck->SetScale(0.5f, 0.1f, 0.5f);
 	table->SetScale(8.0f, 0.5f, 4.5f);
 	tableBorder->SetScale(0.0325f, 0.03f, 0.03f);
+	TEST_ENTITY->SetScale(.1f, .1f, .1f);
 
 	player1->UpdateWorldMatrix();
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
 	table->UpdateWorldMatrix();
 	tableBorder->UpdateWorldMatrix();
-
+	TEST_ENTITY->UpdateWorldMatrix();
 }
 
 
@@ -673,7 +678,7 @@ void Game::Update(float deltaTime, float totalTime)
 		puck->CollisionDetection(player1);
 		puck->CollisionDetection(player2);
 		//Update Point Light Direction
-		pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
+		pointLight.Position = XMFLOAT3(puck->GetPosition().x, .15f, puck->GetPosition().z);
 
 		//Paddle Movement
 		PlayerMovement(deltaTime);
@@ -767,10 +772,17 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	vertexShader->SetMatrix4x4("shadowViewMat", shadowViewMatrix);
 	vertexShader->SetMatrix4x4("shadowProjMat", shadowProjMatrix);
+	vertexShader->SetMatrix4x4("CubeShadowProjMat", pShadowProjMatrix);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat1", pShadowViewMatrix[0]);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat2", pShadowViewMatrix[1]);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat3", pShadowViewMatrix[2]);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat4", pShadowViewMatrix[3]);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat5", pShadowViewMatrix[4]);
+	vertexShader->SetMatrix4x4("CubeShadowViewMat6", pShadowViewMatrix[5]);
 
 	pixelShader->SetSamplerState("ShadowSampler", shadowSampler);
 	pixelShader->SetShaderResourceView("ShadowMap", shadowMapSRV);
-	pixelShader->SetShaderResourceView("ShadowCubeMap", shadowCubeMapSRV);
+	pixelShader->SetShaderResourceView("ShadowCubeMap", pShadowMapSRV);
 
 	pixelShader->SetFloat3("cameraPosition", mainCamera->getPositon()); //sending cam position for specular
 	
@@ -805,11 +817,15 @@ void Game::Draw(float deltaTime, float totalTime)
 	tableBorder->PrepareMaterial(viewMatrix, projectionMatrix);
 	tableBorder->Draw(context);
 
-	/*/Test entity drawing
-	pixelShader->SetShaderResourceView("srv", TEST_ENTITY->getMaterial()->getTextureSRV);
-	TEST_ENTITY->PrepareMaterial(viewMatrix, projectionMatrix);
-	TEST_ENTITY->Draw(context);
-	/*/
+	/**///Test entity drawing
+	if (DebugModeActive) 
+	{
+		pixelShader->SetShaderResourceView("srv", designTextureSRV);
+		TEST_ENTITY->SetPosition(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z);
+		TEST_ENTITY->PrepareMaterial(viewMatrix, projectionMatrix);
+		TEST_ENTITY->Draw(context);
+	}
+	/**/
 	//Particle states
 	float blend[4] = { 1,1,1,1 };
 	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);
@@ -835,7 +851,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	skyVS->SetMatrix4x4("projection", mainCamera->getProjMatrix());
 	skyVS->CopyAllBufferData();
 	skyVS->SetShader();
-
+	
+	//skyPS->SetShaderResourceView("SkyTexture", pShadowMapSRV); //Shadow Cube Tex for Debugging
 	skyPS->SetShaderResourceView("SkyTexture", skySRV);
 	skyPS->SetSamplerState("BasicSampler", sampler);
 	skyPS->SetShader();
