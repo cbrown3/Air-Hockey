@@ -98,11 +98,10 @@ Game::~Game()
 	//pShadowCubeTexture->Release();
 
 	delete[] pShadowViewMatrix;
-	for (int i = 0; i < 6; i++)
-	{
-		pShadowCubeTex[i]->Release();
-		pShadowCubeDepthView[i]->Release();
-	}
+	
+	pShadowCubeDepthView->Release();
+
+	pShadowCubeTex->Release();
 	
 
 	delete shadowVS;
@@ -163,6 +162,13 @@ void Game::Init()
 		&paddleTextureSRV);
 
 	CreateWICTextureFromFile(
+		device,		//The device handles creating new resources (like textures)
+		context,	//context
+		L"Assets/Textures/puck.png",
+		0,
+		&puckSRV);
+
+	CreateWICTextureFromFile(
 		device,
 		context,
 		L"Assets/Textures/particle.jpg",
@@ -197,6 +203,7 @@ void Game::Init()
 	skyDS.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&skyDS, &skyDepthState);
 
+
 	//Shadow related stuff
 	shadowMapSize = 1024;
 
@@ -213,11 +220,26 @@ void Game::Init()
 	shadowTexDesc.SampleDesc.Quality = 0;
 	shadowTexDesc.Usage = D3D11_USAGE_DEFAULT;
 	device->CreateTexture2D(&shadowTexDesc, 0, &shadowMapTex);
-	for (int i = 0; i < 6; i++)
-	{
-		device->CreateTexture2D(&shadowTexDesc, 0, &pShadowCubeTex[i]);
-	}
 	
+	shadowTexDesc.ArraySize = 6;
+	shadowTexDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	device->CreateTexture2D(&shadowTexDesc, 0, &pShadowCubeTex);
+	
+	D3D11_TEXTURE2D_DESC RTVTexDesc = {};
+	RTVTexDesc.Width = shadowMapSize;
+	RTVTexDesc.Height = shadowMapSize;
+	RTVTexDesc.ArraySize = 6;
+	RTVTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	RTVTexDesc.CPUAccessFlags = 0;
+	RTVTexDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	RTVTexDesc.MipLevels = 1;
+	RTVTexDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+	RTVTexDesc.SampleDesc.Count = 1;
+	RTVTexDesc.SampleDesc.Quality = 0;
+	RTVTexDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	device->CreateTexture2D(&RTVTexDesc, 0, &pRTVtex);
 
 	//shadow dpeth stencil
 	D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthDesc = {};
@@ -225,11 +247,9 @@ void Game::Init()
 	shadowDepthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	shadowDepthDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
-	for (int i = 0; i < 6; i++)
-	{
-		device->CreateDepthStencilView(pShadowCubeTex[i], &shadowDepthDesc, &pShadowCubeDepthView[i]);
-	}
 
+	device->CreateDepthStencilView(pShadowCubeTex, &shadowDepthDesc, &pShadowCubeDepthView);
+	
 
 	//shadow resource view
 	D3D11_SHADER_RESOURCE_VIEW_DESC shadowSRVDesc = {};
@@ -239,7 +259,17 @@ void Game::Init()
 	shadowSRVDesc.Texture2D.MostDetailedMip = 0;
 	device->CreateShaderResourceView(shadowMapTex, &shadowSRVDesc, &shadowMapSRV);
 
-	shadowMapTex->Release();
+	//Render Target for cube map
+	D3D11_RENDER_TARGET_VIEW_DESC RTVdesc = {};
+	RTVdesc.Format = RTVTexDesc.Format;
+	RTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	RTVdesc.Texture2DArray.ArraySize = 1;
+	RTVdesc.Texture2DArray.MipSlice = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		RTVdesc.Texture2DArray.FirstArraySlice = i;
+		device->CreateRenderTargetView(pRTVtex, &RTVdesc, &pCubeRTV[i]);
+	}
 
 	//shadow sampler state
 	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
@@ -375,13 +405,14 @@ void Game::LoadShaders()
 	designMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
 	paddleMaterial = new Material(vertexShader, pixelShader, paddleTextureSRV, sampler);
 	TEST_MATERIAL = new Material(vertexShader, pixelShader, TEST_TEXTURE, sampler);
+	puckMaterial = new Material(vertexShader, pixelShader, puckSRV, sampler);
 }
 
 void Game::LoadLights()
 {
 	dirLight = DirectionalLight();
 
-	dirLight.AmbientColor = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	dirLight.AmbientColor = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 	dirLight.DiffuseColor = XMFLOAT4(.6f, .6f, .6f, 1.0f);
 	dirLight.Direction = XMFLOAT3(1.0f, -1.0f, 0.0f);
 
@@ -490,8 +521,8 @@ void Game::CreateShadowMap()
 	//Point Light Shadows (dear god)
 	XMMATRIX pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
 	XMMATRIX pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0)); // height (last param) might need to be 0 0 1
+	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 1, 0, 0));// height (last param) might need to be 0 0 -1
 	XMMATRIX pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0));
 	XMMATRIX pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 1, 0, 0));
 
@@ -509,8 +540,8 @@ void Game::CreateShadowMap()
 
 	for (int i = 0; i < 6; i++)
 	{
-		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView[i]);
-		context->ClearDepthStencilView(pShadowCubeDepthView[i], D3D11_CLEAR_DEPTH, 1.0f, 0);
+		context->OMSetRenderTargets(0, 0, pShadowCubeDepthView);
+		context->ClearDepthStencilView(pShadowCubeDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 		context->RSSetState(shadowRasterizer);
 
 		context->RSSetViewports(1, &viewport);
@@ -538,6 +569,7 @@ void Game::CreateShadowMap()
 		puck->Draw(context);
 	}
 
+
 	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
 	context->RSSetState(0);
 
@@ -545,43 +577,9 @@ void Game::CreateShadowMap()
 	viewport.Height = this->height;
 	context->RSSetViewports(1, &viewport);
 
-	//Made the indivisual shadow maps, now compine them intoa cubemap
-	D3D11_TEXTURE2D_DESC cubeMapDesc = {};
-	cubeMapDesc.Width = shadowMapSize; //* 6;
-	cubeMapDesc.Height = shadowMapSize;
-	cubeMapDesc.MipLevels = 1;
-	cubeMapDesc.ArraySize = 6;
-	cubeMapDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	cubeMapDesc.CPUAccessFlags = 0;
-	cubeMapDesc.SampleDesc.Count = 1;
-	cubeMapDesc.SampleDesc.Quality = 0;
-	cubeMapDesc.Usage = D3D11_USAGE_DEFAULT;
-	cubeMapDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	cubeMapDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC cubeSRVDesc = {};
-	cubeSRVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	cubeSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	cubeSRVDesc.TextureCube.MipLevels = 1;
-	cubeSRVDesc.TextureCube.MostDetailedMip = 0;
-
 	
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC tempDesc = {};
-	tempDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	tempDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	tempDesc.Texture2D.MipLevels = 1;
-	tempDesc.Texture2D.MostDetailedMip = 0;
-
 	
-	device->CreateTexture2D(&cubeMapDesc, 0, &pShadowCubeTexture);
-
-	for (int i = 0; i < 6; i++)
-	{
-		pShadowCubeTexture[i] = *pShadowCubeTex[i];
-	}
-
-	device->CreateShaderResourceView(pShadowCubeTexture, &cubeSRVDesc, &pShadowMapSRV);
 	//for (int i = 0; i < 6; i++)
 	//{
 	//	cubeData[i].pSysMem = pShadowCubeTex[i];
@@ -668,7 +666,8 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
-	CreateShadowMapDirectionalOnly();
+	//CreateShadowMapDirectionalOnly();
+	CreateShadowMap();
 
 	if (!paused)
 	{
@@ -677,7 +676,7 @@ void Game::Update(float deltaTime, float totalTime)
 		puck->CollisionDetection(player1);
 		puck->CollisionDetection(player2);
 		//Update Point Light Direction
-		pointLight.Position = XMFLOAT3(puck->GetPosition().x - 1.0f, -1.0f, puck->GetPosition().z + 1.0f);
+		pointLight.Position = XMFLOAT3(puck->GetPosition().x, -1.0f, puck->GetPosition().z);
 
 		//Paddle Movement
 		PlayerMovement(deltaTime);
@@ -796,11 +795,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	//Sending Normal Map to Pixel Shader
 	pixelShader->SetShaderResourceView("NormalMap", designNormMapSRV);
 
-	pixelShader->SetShaderResourceView("srv", designTextureSRV);
+	pixelShader->SetShaderResourceView("srv", puckSRV);
 
 	puck->PrepareMaterial(viewMatrix, projectionMatrix);
 	puck->Draw(context);
-
+	
+	pixelShader->SetShaderResourceView("srv", designTextureSRV);
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
 

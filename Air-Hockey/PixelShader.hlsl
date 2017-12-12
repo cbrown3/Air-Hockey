@@ -82,14 +82,12 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Overwrite the existing normal (we've been using for lighting),
 	// with the version from the normal map, AFTER we convert to
 	// world space
-	input.normal = normalize(mul(unpackedNormal, TBN));
+	
 
 	//Adjust the variables below as necessary to work with your own code
 	float4 surfaceColor = srv.Sample(basicSampler, input.uv);
 
-	float dirLightAmount = saturate(dot(input.normal, -light.Direction));
-	//dirLightAmount = clamp(dirLightAmount, 0.0f, 0.25f);
-
+	
 	
 	//Point Light Calculations
 	float3 pLightDir = normalize(pLight.Position - input.worldPos);
@@ -103,6 +101,12 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 dirToCamera = normalize(cameraPosition - input.worldPos);
 	float pLightSpec = pow(saturate(dot(reflection, dirToCamera)), 64);
 	pLightSpec = saturate(pLightSpec * atten);
+
+	input.normal = normalize(mul(unpackedNormal, TBN));
+
+	float dirLightAmount = saturate(dot(input.normal, -light.Direction));
+	//dirLightAmount = clamp(dirLightAmount, 0.0f, 0.25f);
+	
 
 	//SHADOW STUFF
 
