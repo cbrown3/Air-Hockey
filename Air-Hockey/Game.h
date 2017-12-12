@@ -10,7 +10,6 @@
 #include "Light.h"
 #include "Paddle.h"
 #include "Puck.h"
-#include "Emitter.h"
 #include <iostream>
 
 class Game
@@ -115,14 +114,6 @@ private:
 
 	GameEntity* table;
 	GameEntity* tableBorder;
-
-	//Particle stuff
-	ID3D11ShaderResourceView* particleTexture;
-	SimpleVertexShader* particleVS;
-	SimplePixelShader* particlePS;
-	ID3D11DepthStencilState* particleDepthState;
-	ID3D11BlendState* particleBlendState;
-	Emitter* emitter;
 
 	GameEntity* TEST_ENTITY;
 	ID3D11ShaderResourceView* TEST_TEXTURE;

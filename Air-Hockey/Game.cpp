@@ -114,14 +114,6 @@ Game::~Game()
 	skyRasterState->Release();
 	skyDepthState->Release();
 
-	//delete Particle things
-	delete particleVS;
-	delete particlePS;
-	delete emitter;
-	particleTexture->Release();
-	particleBlendState->Release();
-	particleDepthState->Release();
-
 }
 
 // --------------------------------------------------------
@@ -162,13 +154,6 @@ void Game::Init()
 		0,
 		&paddleTextureSRV);
 
-	CreateWICTextureFromFile(
-		device,
-		context,
-		L"Assets/Textures/particle.jpg",
-		0,
-		&particleTexture);
-
 	CreateDDSTextureFromFile(
 		device,
 		L"Assets/Textures/GalaxySkyBox.dds",
@@ -187,13 +172,13 @@ void Game::Init()
 	D3D11_RASTERIZER_DESC skyRD = {};
 	skyRD.CullMode = D3D11_CULL_FRONT;
 	skyRD.FillMode = D3D11_FILL_SOLID;
-	skyRD.DepthClipEnable = false;
+	skyRD.DepthClipEnable = true;
 	device->CreateRasterizerState(&skyRD, &skyRasterState);
 
 	//Depth state for accepting pixels with the same depth as the existing depth
 	D3D11_DEPTH_STENCIL_DESC skyDS = {};
 	skyDS.DepthEnable = true;
-	skyDS.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;//switch to all if it looks weird
+	skyDS.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	skyDS.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&skyDS, &skyDepthState);
 
@@ -273,62 +258,6 @@ void Game::Init()
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	device->CreateSamplerState(&samplerDesc, &sampler);
-	
-	//depth state for particles
-	D3D11_DEPTH_STENCIL_DESC dsDesc = {};
-	dsDesc.DepthEnable = true;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; //turns off depth writing
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-	device->CreateDepthStencilState(&dsDesc, &particleDepthState);
-
-	//additive blending for particles
-	D3D11_BLEND_DESC blend = {};
-	blend.AlphaToCoverageEnable = false;
-	blend.IndependentBlendEnable = false;
-	blend.RenderTarget[0].BlendEnable = true;
-	blend.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	blend.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	blend.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-	blend.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
-	blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	device->CreateBlendState(&blend, &particleBlendState);
-
-	/*Emitter(DirectX::XMFLOAT3 pos,
-		DirectX::XMFLOAT3 vel,
-		DirectX::XMFLOAT3 acc,
-		DirectX::XMFLOAT4 startColor,
-		DirectX::XMFLOAT4 endColor,
-		float startSize,
-		float endSize,
-		int maxParticles,
-		int emissionRate,
-		bool loopable,
-		bool active,
-		float lifetime,
-		ID3D11Device* device,
-		SimpleVertexShader* vs,
-		SimplePixelShader* ps,
-		ID3D11ShaderResourceView* texture);*/
-	emitter = new Emitter(
-		XMFLOAT3(0.0f, 1.0f, 0.0f),//pos
-		XMFLOAT3(-2.0f, 2.0f, 0.0f),//vel
-		XMFLOAT3(0.0f, -1.0f, 0.0f),//acc
-		XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f),//start color
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),//end color
-		0.1f,//start size
-		5.0f,//end size
-		1000,//max
-		100,//rate
-		true,//loop
-		true,//active
-		5,//lifetime
-		device,
-		particleVS,
-		particlePS,
-		particleTexture
-	);
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -363,13 +292,6 @@ void Game::LoadShaders()
 
 	skyPS = new SimplePixelShader(device, context);
 	skyPS->LoadShaderFile(L"SkyPS.cso");
-
-	//load particle shaders
-	particleVS = new SimpleVertexShader(device, context);
-	particleVS->LoadShaderFile(L"ParticleVS.cso");
-
-	particlePS = new SimplePixelShader(device, context);
-	particlePS->LoadShaderFile(L"ParticlePS.cso");
 
 	/*CREATE MATERIALS*/
 	designMaterial = new Material(vertexShader, pixelShader, designTextureSRV, sampler);
@@ -723,13 +645,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 		lastHit = totalTime + 1;
 	}
-
-	
-	emitter->Update(deltaTime);
-
 	CameraMovement();
 	mainCamera->Update();
-	
+
 	// Quit if the escape key is pressed
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
@@ -812,15 +730,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	TEST_ENTITY->PrepareMaterial(viewMatrix, projectionMatrix);
 	TEST_ENTITY->Draw(context);
 	/*/
-	//Particle states
-	float blend[4] = { 1,1,1,1 };
-	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);
-	context->OMSetDepthStencilState(particleDepthState, 0);
 
-	emitter->Draw(context, mainCamera);
 
-	//reset the blendstate
-	context->OMSetBlendState(0, blend, 0xffffffff);
 	//draw the sky LAST, this should make it so it draws wherever there isn't
 	//already something there and sets the depth to 1.0
 	ID3D11Buffer* skyVB = cube->GetVertexBuffer();
@@ -846,14 +757,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->RSSetState(skyRasterState);
 	context->OMSetDepthStencilState(skyDepthState, 0);
 
-
-
 	//Draw sky
 	context->DrawIndexed(cube->GetIndexCount(), 0, 0);
-	/**/
-
-
-	
 
 	// Reset any states we've changed for the next frame!
 	context->RSSetState(0);
