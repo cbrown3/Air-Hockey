@@ -122,6 +122,11 @@ private:
 	ID3D11DepthStencilState* particleDepthState;
 	ID3D11BlendState* particleBlendState;
 	Emitter* emitter;
+	Emitter* emitter1;
+	Emitter* emitter2;
+	Emitter* emitter3;
+	float particleTimer;
+	bool particlesActive;
 
 	GameEntity* TEST_ENTITY;
 	ID3D11ShaderResourceView* TEST_TEXTURE;

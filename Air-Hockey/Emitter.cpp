@@ -117,7 +117,7 @@ void Emitter::Deactivate()
 
 void Emitter::Update(float dt)
 {
-	if (active) {
+	if (livingParticleCount || active) {
 		if (firstAliveIndex < firstDeadIndex)
 		{
 			// First alive is BEFORE first dead, so the "living" particles are contiguous
@@ -143,11 +143,12 @@ void Emitter::Update(float dt)
 			for (int i = 0; i < firstDeadIndex; i++)
 				UpdateSingleParticle(dt, i);
 		}
-
-		timeSinceEmit += dt;
-		while (timeSinceEmit > secondsPerParticle) { 
-			SpawnParticle();
-			timeSinceEmit -= secondsPerParticle;
+		if (active) {
+			timeSinceEmit += dt;
+			while (timeSinceEmit > secondsPerParticle) {
+				SpawnParticle();
+				timeSinceEmit -= secondsPerParticle;
+			}
 		}
 	}
 }

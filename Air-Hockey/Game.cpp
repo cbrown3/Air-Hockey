@@ -121,6 +121,10 @@ Game::~Game()
 	delete particleVS;
 	delete particlePS;
 	delete emitter;
+	delete emitter1;
+	delete emitter2;
+	delete emitter3;
+
 	particleTexture->Release();
 	particleBlendState->Release();
 	particleDepthState->Release();
@@ -343,24 +347,81 @@ void Game::Init()
 		SimpleVertexShader* vs,
 		SimplePixelShader* ps,
 		ID3D11ShaderResourceView* texture);*/
+	XMFLOAT4 particleStartColor = { 0.5f, 0.2f, 0.0f, 1.0f };
+	XMFLOAT4 particleEndColor = { 1.0f, 0.1f, 0.0f, 0.0f };
 	emitter = new Emitter(
-		XMFLOAT3(0.0f, 1.0f, 0.0f),//pos
-		XMFLOAT3(-2.0f, 2.0f, 0.0f),//vel
+		XMFLOAT3(3.5f, 0.0f, -1.5f),//pos
+		XMFLOAT3(-2.0f, 2.0f, 2.0f),//vel
 		XMFLOAT3(0.0f, -1.0f, 0.0f),//acc
-		XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f),//start color
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),//end color
+		particleStartColor,//start color
+		particleEndColor,//end color
 		0.1f,//start size
-		5.0f,//end size
+		2.5f,//end size
 		1000,//max
 		100,//rate
 		true,//loop
-		true,//active
-		5,//lifetime
+		false,//active
+		2,//lifetime
 		device,
 		particleVS,
 		particlePS,
 		particleTexture
 	);
+	emitter1 = new Emitter(
+		XMFLOAT3(3.5f, 0.0f, 1.5f),//pos
+		XMFLOAT3(-2.0f, 2.0f, -2.0f),//vel
+		XMFLOAT3(0.0f, -1.0f, 0.0f),//acc
+		particleStartColor,//start color
+		particleEndColor,//end color
+		0.1f,//start size
+		2.5f,//end size
+		1000,//max
+		100,//rate
+		true,//loop
+		false,//active
+		2,//lifetime
+		device,
+		particleVS,
+		particlePS,
+		particleTexture
+	);
+	emitter2 = new Emitter(
+		XMFLOAT3(-3.5f, 0.0f, -1.5f),//pos
+		XMFLOAT3(2.0f, 2.0f, 2.0f),//vel
+		XMFLOAT3(0.0f, -1.0f, 0.0f),//acc
+		particleStartColor,//start color
+		particleEndColor,//end color
+		0.1f,//start size
+		2.5f,//end size
+		1000,//max
+		100,//rate
+		true,//loop
+		false,//active
+		2,//lifetime
+		device,
+		particleVS,
+		particlePS,
+		particleTexture
+	);
+	emitter3 = new Emitter(
+		XMFLOAT3(-3.5f, 0.0f, 1.5f),//pos
+		XMFLOAT3(2.0f, 2.0f, -2.0f),//vel
+		XMFLOAT3(0.0f, -1.0f, 0.0f),//acc
+		particleStartColor,//start color
+		particleEndColor,//end color
+		0.1f,//start size
+		2.5f,//end size
+		1000,//max
+		100,//rate
+		true,//loop
+		false,//active
+		2,//lifetime
+		device,
+		particleVS,
+		particlePS,
+		particleTexture
+	);
+	particleTimer = 0;
 
 	// Tell the input assembler stage of the pipeline what kind of
 	// geometric primitives (points, lines or triangles) we want to draw.  
@@ -688,14 +749,35 @@ void Game::Update(float deltaTime, float totalTime)
 
 		score = puck->checkScore();
 	}
+	if (particlesActive)
+	{
+		if(particleTimer<1)
+			particleTimer += deltaTime;
+		else
+		{
+			emitter->Deactivate();
+			emitter1->Deactivate();
+			emitter2->Deactivate();
+			emitter3->Deactivate();
+			particlesActive = false;
+			particleTimer = 0;
+		}
 
+	}
 	//Score
-	if(score == 1)
+	if (score == 1) {
 		std::cout << "player 1 scored\n";
-
-	if (score == 2)
+		emitter->Activate();
+		emitter1->Activate();
+		particlesActive = true;
+	}
+	if (score == 2) {
 		std::cout << "player 2 scored\n";
-
+		emitter2->Activate();
+		emitter3->Activate();
+		particlesActive = true;
+	}
+	
 
 	if (GetAsyncKeyState('T') & 0x8000 && (totalTime > lastHit)) 
 	{
@@ -709,6 +791,8 @@ void Game::Update(float deltaTime, float totalTime)
 		}
 
 		lastHit = totalTime + 1;
+
+		
 	}
 
 	if (GetAsyncKeyState(' ') & 0x8000 && (totalTime > lastHit))
@@ -727,6 +811,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 	
 	emitter->Update(deltaTime);
+	emitter1->Update(deltaTime);
+	emitter2->Update(deltaTime);
+	emitter3->Update(deltaTime);
 
 	CameraMovement();
 	mainCamera->Update();
@@ -742,7 +829,7 @@ void Game::Update(float deltaTime, float totalTime)
 void Game::Draw(float deltaTime, float totalTime)
 {
 	// Background color (Cornflower Blue in this case) for clearing
-	const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
+	const float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };//{ 0.4f, 0.6f, 0.75f, 0.0f };
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
@@ -830,11 +917,16 @@ void Game::Draw(float deltaTime, float totalTime)
 	float blend[4] = { 1,1,1,1 };
 	context->OMSetBlendState(particleBlendState, blend, 0xffffffff);
 	context->OMSetDepthStencilState(particleDepthState, 0);
+	if (!DebugModeActive) {
+		emitter->Draw(context, mainCamera);
 
-	emitter->Draw(context, mainCamera);
+		emitter1->Draw(context, mainCamera);
 
-	//reset the blendstate
-	context->OMSetBlendState(0, blend, 0xffffffff);
+		emitter2->Draw(context, mainCamera);
+
+		emitter3->Draw(context, mainCamera);
+	}
+	
 	//draw the sky LAST, this should make it so it draws wherever there isn't
 	//already something there and sets the depth to 1.0
 	ID3D11Buffer* skyVB = cube->GetVertexBuffer();
@@ -868,7 +960,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	/**/
 
 
-	
+	//reset the blendstate
+	context->OMSetBlendState(0, blend, 0xffffffff);
 
 	// Reset any states we've changed for the next frame!
 	context->RSSetState(0);
