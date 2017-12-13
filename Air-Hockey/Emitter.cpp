@@ -212,23 +212,25 @@ void Emitter::SpawnParticle()
 
 void Emitter::CopyParticlesToGPU(ID3D11DeviceContext * context)
 {
-	if (firstAliveIndex < firstDeadIndex) {
-		for (int i = firstAliveIndex; i < firstDeadIndex; i++)
-			CopyOneParticle(i);
+	if (livingParticleCount || active) {
+		if (firstAliveIndex < firstDeadIndex) {
+			for (int i = firstAliveIndex; i < firstDeadIndex; i++)
+				CopyOneParticle(i);
+		}
+		else {
+			for (int i = firstAliveIndex; i < max; i++)
+				CopyOneParticle(i);
+			for (int i = 0; i < firstDeadIndex; i++)
+				CopyOneParticle(i);
+		}
+
+		D3D11_MAPPED_SUBRESOURCE mapped = {};
+		context->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+		memcpy(mapped.pData, particleVertices, sizeof(ParticleVertex) * 4 * max);
+
+		context->Unmap(vertexBuffer, 0);
 	}
-	else {
-		for (int i = firstAliveIndex; i < max; i++)
-			CopyOneParticle(i);
-		for (int i = 0; i < firstDeadIndex; i++)
-			CopyOneParticle(i);
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mapped = {};
-	context->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-
-	memcpy(mapped.pData, particleVertices, sizeof(ParticleVertex) * 4 * max);
-
-	context->Unmap(vertexBuffer, 0);
 }
 
 void Emitter::CopyOneParticle(int index)

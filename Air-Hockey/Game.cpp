@@ -667,8 +667,8 @@ void Game::CreateMatrices()
 
 	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
 
-	//XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(0.78539816339f, 1.0f, .01f, 50.0f);
-	XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, .01f, 5.0f);
+	XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(0.78539816339f, 1.0f, .01f, 50.0f);
+	//XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, .01f, 5.0f);
 
 	XMStoreFloat4x4(&pShadowProjMatrix, XMMatrixTranspose(pShadowProj));
 }
