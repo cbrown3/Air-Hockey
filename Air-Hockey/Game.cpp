@@ -56,12 +56,14 @@ Game::~Game()
 	//Clean up 
 	designTextureSRV->Release();
 	paddleTextureSRV->Release();
-	//designNormMapSRV->Release();
+	designNormMapSRV->Release();
+	puckSRV->Release();
 	sampler->Release();
 
 	delete designMaterial;
 	delete paddleMaterial;
 	delete TEST_MATERIAL;
+	delete puckMaterial;
 
 	//delete meshes
 	delete cube;
@@ -94,14 +96,13 @@ Game::~Game()
 	shadowSampler->Release();
 	shadowRasterizer->Release();
 
-	//pShadowMapSRV->Release();
-	//pShadowCubeTexture->Release();
+	pShadowMapSRV->Release();
 
 	delete[] pShadowViewMatrix;
 	
 	for(int i = 0; i < 6; i++)
 	{
-		//pShadowCubeDepthView[i]->Release();
+		pShadowCubeDepthView[i]->Release();
 	}
 	
 
@@ -213,7 +214,7 @@ void Game::Init()
 
 
 	//Shadow related stuff
-	shadowMapSize = 1024;
+	shadowMapSize = 2048;
 
 	D3D11_TEXTURE2D_DESC shadowTexDesc = {};
 	shadowTexDesc.Width = shadowMapSize;
@@ -241,7 +242,7 @@ void Game::Init()
 	shadowDepthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	shadowDepthDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
-
+	shadowMapTex->Release();
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC CubeDepthDesc = {};
 	CubeDepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -663,9 +664,6 @@ void Game::CreateMatrices()
 	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
 
 	XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.0f, .1f, 3.0f);
-	//XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, .01f, 5.0f);
-
-
 
 	XMStoreFloat4x4(&pShadowProjMatrix, XMMatrixTranspose(pShadowProj));
 }
