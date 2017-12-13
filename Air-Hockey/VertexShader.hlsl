@@ -81,24 +81,6 @@ VertexToPixel main( VertexShaderInput input )
 	matrix shadowWVP = mul(mul(world, shadowViewMat), shadowProjMat);
 	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
 
-	matrix CShadowWVP1 = mul(mul(world, CubeShadowViewMat1), shadowProjMat);
-	matrix CShadowWVP2 = mul(mul(world, CubeShadowViewMat2), shadowProjMat);
-	matrix CShadowWVP3 = mul(mul(world, CubeShadowViewMat3), shadowProjMat);
-	matrix CShadowWVP4 = mul(mul(world, CubeShadowViewMat4), shadowProjMat);
-	matrix CShadowWVP5 = mul(mul(world, CubeShadowViewMat5), shadowProjMat);
-	matrix CShadowWVP6 = mul(mul(world, CubeShadowViewMat6), shadowProjMat);
-	
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-	output.shadowMapPosition = mul(float4(input.position, 1.0f), shadowWVP);
-
-
-
-
-
 	output.normal = mul(input.normal, (float3x3)world);
 	output.normal = normalize(output.normal); // Make sure it's length is 1
 

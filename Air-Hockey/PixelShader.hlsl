@@ -123,19 +123,43 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 
 	//CUBE MAP SHADOW STUFF
-	float4 distanceVec = float4 (pLight.Position, 1) - float4(input.worldPos, 1);
-	depthFromLight = saturate(length(distanceVec.xyz));
-	distanceVec.xyz = normalize(distanceVec.xyz);
+	/*/
+	float4 distanceFromLight = float4 (pLight.Position, 0) - float4(input.worldPos, 0);
+	//distanceFromLight = distanceFromLight / ShadowCubeMap.Sample(basicSampler, -distanceFromLight.xyz).w;
 
-	float shadowDepth = ShadowMap.Sample(basicSampler, -distanceVec.xyz).x / ShadowMap.Sample(basicSampler, -distanceVec.xyz);
+	depthFromLight = length(distanceFromLight.xyz);
+	distanceFromLight.xyz = normalize(distanceFromLight.xyz);
+
+	float shadowDepth = ShadowCubeMap.Sample(basicSampler, -distanceFromLight.xyz).x * 3; // ShadowCubeMap.Sample(basicSampler, -distanceFromLight.xyz).w;
 	//float shadowDepthLength = length(shadowDepth.xyz);
-	float shadow2Amount = depthFromLight < shadowDepth;
+	//return shadowDepth;
+	float shadow2Amount = shadowDepth >= depthFromLight;
 	
-	//float4 shadow2Amount = ShadowCubeMap.Sample(basicSampler, input.position.xyz);
 	//return shadow2Amount;
-	//return float4(shadowAmount, shadow2Amount, shadowAmount, 1);
+	//float shadow2Amount = ShadowCubeMap.Sample(basicSampler, input.worldPos).x * 100 - 99; //shows dpeth buffers on floor
 
-	float4 finalLight = shadowAmount * (((pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount) + pLightSpec) + (light.AmbientColor + (light.DiffuseColor * dirLightAmount)) + (pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount))) * surfaceColor);
+	//return float4(shadowAmount, shadow2Amount.r, shadowAmount, 1);
+
+	return shadow2Amount;
+	/*/
+	float4 DistFromLight = (float4(pLight.Position.xyz, 0)) - (float4(input.worldPos.xyz, 0));
+	depthFromLight = clamp(length(DistFromLight), 0, 1); //divide by far plane distance
+	float shadow2Amount = 1;
+
+	//if (depthFromLight <= 3)
+	//{
+		float SampleDist = ShadowCubeMap.Sample(basicSampler, -DistFromLight.xyz).r; 
+
+		shadow2Amount = SampleDist >= depthFromLight;
+	//}
+	//return shadow2Amount;
+
+
+
+
+
+
+	float4 finalLight = ( /**/ shadow2Amount * /**/ (((pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount) + pLightSpec) + (pLight.AmbientColor + (pLight.DiffuseColor * pLightAmount)))) + (shadowAmount * (light.AmbientColor + (light.DiffuseColor * dirLightAmount))) * surfaceColor);
 
 	//return pLight.AmbientColor;
 	//return pLight.AmbientColor + (pLightAmount * pLight.DiffuseColor);

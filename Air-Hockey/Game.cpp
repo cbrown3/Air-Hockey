@@ -242,7 +242,6 @@ void Game::Init()
 	shadowDepthDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(shadowMapTex, &shadowDepthDesc, &shadowDepthView);
 
-	//device->CreateDepthStencilView(pShadowCubeTex, &shadowDepthDesc, &pShadowCubeDepthView);
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC CubeDepthDesc = {};
 	CubeDepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -582,12 +581,12 @@ void Game::CreateShadowMap()
 	/*/
 
 	//Point Light Shadows (dear god)
-	XMMATRIX pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x + 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
-	XMMATRIX pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x - 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
-	XMMATRIX pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y + 1, pointLight.Position.z, 1), XMVectorSet(0, 0, 1, 1)); // height (last param) might need to be 0 0 1
-	XMMATRIX pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y - 1, pointLight.Position.z, 1), XMVectorSet(0, 0, -1, 1));// height (last param) might need to be 0 0 -1
-	XMMATRIX pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z + 1, 1), XMVectorSet(0, 1, 0, 1));
-	XMMATRIX pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z - 1, 1), XMVectorSet(0, 1, 0, 1));
+	pShadowView1 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x + 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
+	pShadowView2 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x - 1, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(0, 1, 0, 1));
+	pShadowView3 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y + 1, pointLight.Position.z, 1), XMVectorSet(0, 0, 1, 1)); // height (last param) might need to be 0 0 1
+	pShadowView4 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y - 1, pointLight.Position.z, 1), XMVectorSet(0, 0, -1, 1));// height (last param) might need to be 0 0 -1
+	pShadowView5 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z + 1, 1), XMVectorSet(0, 1, 0, 1));
+	pShadowView6 = XMMatrixLookAtLH(XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z, 1), XMVectorSet(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z - 1, 1), XMVectorSet(0, 1, 0, 1));
 
 	//pShadowViewMatrix[0] = {};
 
@@ -620,10 +619,6 @@ void Game::CreateShadowMap()
 		shadowVS->SetMatrix4x4("world", player2->GetWorldMatrix());
 		shadowVS->CopyAllBufferData();
 		player2->Draw(context);
-
-		shadowVS->SetMatrix4x4("world", table->GetWorldMatrix());
-		shadowVS->CopyAllBufferData();
-		table->Draw(context);
 
 		shadowVS->SetMatrix4x4("world", puck->GetWorldMatrix());
 		shadowVS->CopyAllBufferData();
@@ -667,8 +662,10 @@ void Game::CreateMatrices()
 
 	XMStoreFloat4x4(&shadowProjMatrix, XMMatrixTranspose(shadowProj));
 
-	XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(0.78539816339f, 1.0f, .01f, 50.0f);
+	XMMATRIX pShadowProj = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.0f, .1f, 3.0f);
 	//XMMATRIX pShadowProj = XMMatrixPerspectiveLH(1.0f, 1.0f, .01f, 5.0f);
+
+
 
 	XMStoreFloat4x4(&pShadowProjMatrix, XMMatrixTranspose(pShadowProj));
 }
@@ -860,12 +857,6 @@ void Game::Draw(float deltaTime, float totalTime)
 	vertexShader->SetMatrix4x4("shadowViewMat", shadowViewMatrix);
 	vertexShader->SetMatrix4x4("shadowProjMat", shadowProjMatrix);
 	vertexShader->SetMatrix4x4("CubeShadowProjMat", pShadowProjMatrix);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat1", pShadowViewMatrix[0]);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat2", pShadowViewMatrix[1]);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat3", pShadowViewMatrix[2]);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat4", pShadowViewMatrix[3]);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat5", pShadowViewMatrix[4]);
-	vertexShader->SetMatrix4x4("CubeShadowViewMat6", pShadowViewMatrix[5]);
 
 	pixelShader->SetSamplerState("ShadowSampler", shadowSampler);
 	pixelShader->SetShaderResourceView("ShadowMap", shadowMapSRV);

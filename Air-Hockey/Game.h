@@ -81,6 +81,14 @@ private:
 	ID3D11Texture2D* pShadowCubeTex; 
 	ID3D11DepthStencilView* pShadowCubeDepthView[6]; //array of depth buffer textures
 
+	//View matticies for the cube map
+	XMMATRIX pShadowView1;
+	XMMATRIX pShadowView2;
+	XMMATRIX pShadowView3;
+	XMMATRIX pShadowView4;
+	XMMATRIX pShadowView5;
+	XMMATRIX pShadowView6;
+
 	SimpleVertexShader* shadowVS;
 
 	XMFLOAT4X4 shadowViewMatrix, shadowProjMatrix;
