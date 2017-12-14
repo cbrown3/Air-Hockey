@@ -911,20 +911,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	ID3D11ShaderResourceView* fontTexture;
 	font->GetSpriteSheet(&fontTexture);
 
-	//Rectangles for text
-	RECT fontRect = { 220, 10, 420, 210 };
-
-
 	//Draw Text
 	spriteBatch->Begin();
 	font->DrawString(
 		spriteBatch,
-		L"P1 Score: " + (wchar_t)player1Score,
-		XMFLOAT2(20, 50));
-	font->DrawString(
-		spriteBatch,
-		L"P2 Score: " + (wchar_t)player2Score,
-		XMFLOAT2(900, 50));
+		L"Air Hockey",
+		XMFLOAT2(500, 50));
 
 	spriteBatch->End();
 
