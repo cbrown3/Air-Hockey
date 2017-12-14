@@ -12,6 +12,8 @@
 #include "Puck.h"
 #include "Emitter.h"
 #include <iostream>
+#include "SpriteBatch.h"
+#include "SpriteFont.h"
 
 class Game
 	: public DXCore
@@ -49,6 +51,15 @@ private:
 	void CreateBasicGeometry();
 	void CreateShadowMap();
 	void CreateShadowMapDirectionalOnly();
+
+	//Sprites and Fonts
+	SpriteBatch* spriteBatch;
+	SpriteFont* font;
+	
+	//Player Score
+	int player1Score;
+	int player2Score;
+	int scoreBool;
 
 	// Buffers to hold actual geometry data
 	ID3D11Buffer* triVertBuffer;
@@ -100,9 +111,6 @@ private:
 	DirectX::XMFLOAT4X4 viewMatrix;
 	DirectX::XMFLOAT4X4 projectionMatrix;
 
-	//Score
-	int score;
-
 	//Meshes
 	Mesh* cube;
 	Mesh* sphere;
@@ -120,7 +128,6 @@ private:
 	Puck* puck;
 
 	GameEntity* table;
-	GameEntity* tableBorder;
 
 	//Particle stuff
 	ID3D11ShaderResourceView* particleTexture;

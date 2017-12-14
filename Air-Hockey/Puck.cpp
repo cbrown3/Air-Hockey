@@ -4,9 +4,9 @@
 
 Puck::Puck(Mesh* a_mesh, Material* a_mat): GameEntity(a_mesh, a_mat)
 {
-setDirection(1.0f, 0.0f, 1.0f);
-speed = 3.0f;
-velocity = XMFLOAT3(direction.x * speed, 0, direction.z*speed);
+	setDirection(1.0f, 0.0f, 1.0f);
+	speed = 3.0f;
+	velocity = XMFLOAT3(direction.x * speed, 0, direction.z*speed);
 }
 
 Puck::~Puck()

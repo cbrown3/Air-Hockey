@@ -4,7 +4,7 @@
 
 Camera::Camera()
 {
-	camPos = XMFLOAT3(0, 3, -5);
+	camPos = XMFLOAT3(0, 5, -6);
 	camDir = XMFLOAT3(0, 0, 1);
 	camRotX = .7;
 	camRotY = 0;

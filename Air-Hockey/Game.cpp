@@ -72,6 +72,9 @@ Game::~Game()
 	delete hockeyPaddle;
 	delete hockeyTable;
 	
+	//delete sprites and fonts
+	delete spriteBatch;
+	delete font;
 
 	// Delete our simple shader objects, which
 	// will clean up their own internal DirectX stuff
@@ -87,7 +90,6 @@ Game::~Game()
 	delete player2;
 	delete puck;
 	delete table;
-	delete tableBorder;
 	delete TEST_ENTITY;
 
 	//delete shadow related things
@@ -196,6 +198,10 @@ void Game::Init()
 		0,
 		&TEST_TEXTURE);
 
+	//Initialize spritebatch and font
+	spriteBatch = new SpriteBatch(context);
+	font = new SpriteFont(device, L"Assets/Fonts/airstrike.spritefont");
+
 	//States for drawing the sky
 
 	//Rasterize state for drawing the "inside"
@@ -212,6 +218,10 @@ void Game::Init()
 	skyDS.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&skyDS, &skyDepthState);
 
+	//Initialize Score
+	player1Score = 0;
+	player2Score = 0;
+	scoreBool = 0;
 
 	//Shadow related stuff
 	shadowMapSize = 2048;
@@ -686,25 +696,21 @@ void Game::CreateBasicGeometry()
 	player1 = new Paddle(hockeyPaddle, paddleMaterial);
 	player2 = new Paddle(hockeyPaddle, paddleMaterial);
 	table = new GameEntity(cube, designMaterial);
-	tableBorder = new GameEntity(hockeyTable, TEST_MATERIAL);
 
 	player1->SetPosition(-2.5f, -0.225f, 0.0f);
 	player2->SetPosition(2.5f, -0.225f, 0.0f);
 	puck->SetPosition(0.0f, -.2f, 0.0f);
 	table->SetPosition(0.0f, -.5f, 0.0f);
-	tableBorder->SetPosition(1.5f, -2.25f, 11.232f);
 	player1->SetScale(0.5f, 0.5f, 0.5f);
 	player2->SetScale(0.5f, 0.5f, 0.5f);
 	puck->SetScale(0.5f, 0.1f, 0.5f);
 	table->SetScale(8.0f, 0.5f, 4.5f);
-	tableBorder->SetScale(0.0325f, 0.03f, 0.03f);
 	TEST_ENTITY->SetScale(.1f, .1f, .1f);
 
 	player1->UpdateWorldMatrix();
 	player2->UpdateWorldMatrix();
 	puck->UpdateWorldMatrix();
 	table->UpdateWorldMatrix();
-	tableBorder->UpdateWorldMatrix();
 	TEST_ENTITY->UpdateWorldMatrix();
 }
 
@@ -742,7 +748,7 @@ void Game::Update(float deltaTime, float totalTime)
 		//Camera Movement during Debug Mode
 		
 
-		score = puck->checkScore();
+		scoreBool = puck->checkScore();
 	}
 	if (particlesActive)
 	{
@@ -760,17 +766,19 @@ void Game::Update(float deltaTime, float totalTime)
 
 	}
 	//Score
-	if (score == 1) {
+	if (scoreBool == 1) {
 		std::cout << "player 1 scored\n";
 		emitter->Activate();
 		emitter1->Activate();
 		particlesActive = true;
+		player1Score++;
 	}
-	if (score == 2) {
+	if (scoreBool == 2) {
 		std::cout << "player 2 scored\n";
 		emitter2->Activate();
 		emitter3->Activate();
 		particlesActive = true;
+		player2Score++;
 	}
 	
 
@@ -890,9 +898,6 @@ void Game::Draw(float deltaTime, float totalTime)
 	table->PrepareMaterial(viewMatrix, projectionMatrix);
 	table->Draw(context);
 
-	tableBorder->PrepareMaterial(viewMatrix, projectionMatrix);
-	tableBorder->Draw(context);
-
 	/**///Test entity drawing
 	if (DebugModeActive) 
 	{
@@ -901,6 +906,28 @@ void Game::Draw(float deltaTime, float totalTime)
 		TEST_ENTITY->PrepareMaterial(viewMatrix, projectionMatrix);
 		TEST_ENTITY->Draw(context);
 	}
+
+	//Store Texture in Font
+	ID3D11ShaderResourceView* fontTexture;
+	font->GetSpriteSheet(&fontTexture);
+
+	//Rectangles for text
+	RECT fontRect = { 220, 10, 420, 210 };
+
+
+	//Draw Text
+	spriteBatch->Begin();
+	font->DrawString(
+		spriteBatch,
+		L"P1 Score: " + (wchar_t)player1Score,
+		XMFLOAT2(20, 50));
+	font->DrawString(
+		spriteBatch,
+		L"P2 Score: " + (wchar_t)player2Score,
+		XMFLOAT2(900, 50));
+
+	spriteBatch->End();
+
 	/**/
 	//Particle states
 	float blend[4] = { 1,1,1,1 };

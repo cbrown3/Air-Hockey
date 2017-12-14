@@ -111,5 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="..\x64\Debug\Assets\Fonts\airstrike.spritefont" />
+    <None Include="..\x64\Debug\Assets\Fonts\courier.spritefont" />
   </ItemGroup>
 </Project>
